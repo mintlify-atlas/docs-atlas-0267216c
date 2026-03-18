@@ -1,0 +1,92 @@
+---
+title: Performance monitoring
+description: Measure transaction latency, throughput, and error rates across your services with Sentry Performance.
+---
+
+Sentry Performance monitoring gives you visibility into the speed and reliability of your application by capturing **transactions** — units of work such as an HTTP request, a background job, or a page load. Each transaction contains **spans** that represent individual operations (database queries, HTTP calls, rendering, etc.).
+
+## Core concepts
+
+<CardGroup cols={3}>
+  <Card title="Transaction" icon="arrow-right-arrow-left">
+    A top-level operation with a name, duration, status, and a set of child spans. Maps to one request or job.
+  </Card>
+  <Card title="Span" icon="code-branch">
+    A timed child operation within a transaction. Spans form a tree that shows exactly where time is spent.
+  </Card>
+  <Card title="Trace" icon="network-wired">
+    A collection of transactions across services that are causally related via a shared trace ID.
+  </Card>
+</CardGroup>
+
+## Key metrics
+
+| Metric | Description |
+|---|---|
+| **Apdex** | Application Performance Index — a score from 0 to 1 based on satisfied, tolerable, and frustrated response times |
+| **p50 / p75 / p95 / p99 latency** | Percentile response times for a transaction |
+| **Error rate** | Percentage of transactions that finished with an error status |
+| **Throughput** | Number of transactions per minute (TPM) or per second (TPS) |
+| **Failure rate** | Percentage of transactions with status `internal_error`, `not_found`, etc. |
+
+## Transaction sampling
+
+Capturing every transaction can be expensive. Sentry supports two mechanisms to control volume:
+
+### Uniform sample rate
+
+Set `traces_sample_rate` in the SDK to capture a fixed percentage of transactions:
+
+```python
+import sentry_sdk
+
+sentry_sdk.init(
+    dsn="...",
+    traces_sample_rate=0.2,  # capture 20% of transactions
+)
+```
+
+### Dynamic sampling
+
+Sentry's **Dynamic Sampling** adjusts retention rates automatically based on the value of a trace. High-value traces (those containing errors, slow spans, or new transactions) are retained at a higher rate than repetitive, fast, error-free traces. This lets you keep a representative sample without capturing everything.
+
+Dynamic sampling decisions are made server-side after Sentry receives the event. The SDK sample rate you set is the initial filter; Sentry applies a second pass based on trace context.
+
+## Performance issues
+
+Sentry detects **performance issues** — patterns in your span data that indicate a problem — and surfaces them in the issue stream alongside error issues:
+
+| Performance issue | Description |
+|---|---|
+| **N+1 queries** | A query executed repeatedly in a loop, once per item |
+| **Slow DB queries** | Single queries that take longer than the configured threshold |
+| **Consecutive DB queries** | Sequential queries that could be parallelized or batched |
+| **N+1 API calls** | Repeated HTTP calls to the same endpoint in a loop |
+| **Uncompressed assets** | Large static assets served without compression |
+| **Large HTTP payload** | Response bodies above a size threshold |
+| **Render-blocking assets** | Resources that block the browser's rendering |
+
+Performance issues have the same states and actions as error issues — you can resolve, ignore, assign, and alert on them.
+
+## Performance landing page
+
+The **Performance** section of Sentry shows:
+
+- A list of all transactions with their p50/p75/p95 latency, error rate, and throughput
+- A duration distribution chart to visualize latency spread
+- Aggregate Web Vitals for frontend transactions
+- Filters by project, environment, and time range
+
+## Transaction summary
+
+Drilling into a transaction opens the **Transaction Summary** page, which shows:
+
+- Latency histogram for this transaction over time
+- p50/p75/p95/p99 trend charts
+- Top slow spans ranked by their contribution to overall latency
+- Related issues discovered in this transaction
+- A list of sampled transaction events with their spans
+
+<Tip>
+Use the **Span Summary** view to identify which specific operation is your highest-leverage optimization target across all occurrences of a transaction.
+</Tip>

@@ -1,0 +1,253 @@
+---
+title: Troubleshooting
+description: Diagnose and fix common issues with your self-hosted Sentry instance.
+---
+
+## Viewing logs
+
+Most issues surface in the service logs. Start by checking the relevant service:
+
+```bash
+# Follow all logs
+docker compose logs -f
+
+# Follow a specific service
+docker compose logs -f web
+docker compose logs -f worker
+docker compose logs -f relay
+```
+
+You can also view recent logs without following:
+
+```bash
+docker compose logs --tail=100 web
+```
+
+## Common issues
+
+### 502 Bad Gateway
+
+**Symptom:** The browser shows a 502 or "Bad Gateway" error when accessing Sentry.
+
+**Cause:** The `web` service is not running or is not reachable by the reverse proxy.
+
+**Fix:**
+
+```bash
+# Check if the web service is running
+docker compose ps web
+
+# If not, start it
+docker compose up -d web
+
+# Check logs for startup errors
+docker compose logs web
+```
+
+If the service keeps crashing, the most common causes are a missing or invalid `SENTRY_SECRET_KEY`, a database connection failure, or a failed migration.
+
+---
+
+### Events not appearing
+
+**Symptom:** You're sending events to Sentry but they don't appear in the UI.
+
+**Cause:** Relay is not running, misconfigured, or the Kafka consumers are stopped.
+
+**Fix:**
+
+```bash
+# Check Relay status
+docker compose ps relay
+docker compose logs relay
+
+# Check ingest consumers
+docker compose ps ingest-events
+docker compose logs ingest-events
+```
+
+Also verify that the DSN you're using points to the correct host and port (9000 by default). If Sentry is behind a reverse proxy, ensure the proxy forwards requests to Relay correctly.
+
+---
+
+### Email not sending
+
+**Symptom:** Alerts, notifications, and password reset emails are not being received.
+
+**Cause:** SMTP is not configured, or the `worker` service is not running.
+
+**Fix:**
+
+1. Check that `SENTRY_EMAIL_HOST` is set in `.env`
+2. Check worker logs for email delivery errors:
+
+   ```bash
+   docker compose logs worker
+   ```
+
+3. Test the SMTP connection from within the container:
+
+   ```bash
+   docker compose run --rm web python -c "
+   from django.core.mail import send_mail
+   send_mail('Test', 'Test email', 'from@example.com', ['to@example.com'])
+   "
+   ```
+
+4. Verify no firewall rules are blocking outbound connections on the configured SMTP port.
+
+---
+
+### High memory usage
+
+**Symptom:** The host is running out of memory, or containers are being OOM-killed.
+
+**Cause:** Worker concurrency is set too high, or a runaway process is consuming memory.
+
+**Fix:**
+
+```bash
+# Check per-container memory usage
+docker stats
+```
+
+Reduce Celery worker concurrency in `sentry.conf.py`:
+
+```python
+CELERY_WORKER_CONCURRENCY = 2
+```
+
+Also check the number of web workers:
+
+```python
+SENTRY_WEB_OPTIONS = {
+    'workers': 2,
+}
+```
+
+Restart services after making changes:
+
+```bash
+docker compose restart worker web
+```
+
+---
+
+### Database connection errors
+
+**Symptom:** Errors like `could not connect to server` or `too many connections` in the web or worker logs.
+
+**Cause:** PostgreSQL is not running, has reached `max_connections`, or the credentials are wrong.
+
+**Fix:**
+
+```bash
+# Check PostgreSQL status
+docker compose ps postgres
+docker compose logs postgres
+
+# Test connectivity
+docker compose exec postgres psql -U postgres -c "SELECT 1;"
+```
+
+If you're hitting `max_connections`, either reduce the number of web/worker processes or increase `max_connections` in your PostgreSQL configuration:
+
+```bash
+# Inside the postgres container
+postgres=# ALTER SYSTEM SET max_connections = 200;
+postgres=# SELECT pg_reload_conf();
+```
+
+Then restart the Postgres container for the change to take effect:
+
+```bash
+docker compose restart postgres
+```
+
+---
+
+### Migration errors
+
+**Symptom:** Errors during `./install.sh` or `docker compose run --rm web upgrade`, such as `relation does not exist` or lock timeout errors.
+
+**Cause:** A previous migration was interrupted, or there are long-running queries holding locks.
+
+**Fix:**
+
+1. Take a database backup before attempting recovery:
+
+   ```bash
+   docker compose exec postgres pg_dumpall -U postgres > sentry-backup-$(date +%Y%m%d).sql
+   ```
+
+2. Check for blocking queries:
+
+   ```bash
+   docker compose exec postgres psql -U postgres -c "
+     SELECT pid, now() - pg_stat_activity.query_start AS duration, query, state
+     FROM pg_stat_activity
+     WHERE state != 'idle'
+     ORDER BY duration DESC;
+   "
+   ```
+
+3. If a query is blocking migrations, terminate it (use the PID from the query above):
+
+   ```bash
+   docker compose exec postgres psql -U postgres -c "SELECT pg_terminate_backend(<pid>);"
+   ```
+
+4. Re-run the install or upgrade command.
+
+<Warning>
+  Never skip versions when upgrading. If you see an error about migration history, follow the hard stop upgrade process documented in the [self-hosted CHANGELOG](https://github.com/getsentry/self-hosted/blob/master/CHANGELOG.md).
+</Warning>
+
+## Accessing the Django shell
+
+For advanced debugging, you can open a Django shell inside the `web` container:
+
+```bash
+docker compose run --rm web bash
+```
+
+Then from within the container:
+
+```bash
+sentry django shell
+```
+
+This gives you a full Python/Django shell with access to all Sentry models and utilities.
+
+## Running management commands
+
+You can run any Sentry management command using `docker compose run`:
+
+```bash
+# Run database migrations manually
+docker compose run --rm web upgrade
+
+# Create a user
+docker compose run --rm web createuser --email admin@example.com --superuser
+
+# Send a test email
+docker compose run --rm web sendmail --to user@example.com
+```
+
+See all available commands:
+
+```bash
+docker compose run --rm web help
+```
+
+## Getting help
+
+If you can't resolve an issue with the above steps:
+
+- **GitHub Issues:** [github.com/getsentry/self-hosted/issues](https://github.com/getsentry/self-hosted/issues) — search for existing reports before opening a new one
+- **Discord:** Join the [Sentry Discord](https://discord.gg/sentry) and ask in the `#self-hosted` channel
+
+When reporting an issue, include:
+- Your Sentry version (`docker compose exec web sentry --version`)
+- Relevant service logs
+- Your host OS and Docker version

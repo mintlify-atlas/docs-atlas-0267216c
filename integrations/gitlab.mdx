@@ -1,0 +1,129 @@
+---
+title: GitLab
+description: Connect Sentry to GitLab to enable suspect commits, stack trace linking, PR comments, code owners, and issue syncing.
+---
+
+The GitLab integration connects your Sentry organization to a GitLab group on gitlab.com or a self-managed GitLab instance. It enriches Sentry issues with commit data and enables deep linking between Sentry issues and GitLab issues.
+
+## Features
+
+<CardGroup cols={2}>
+  <Card title="Suspect commits" icon="git-commit">
+    Sentry identifies the commits most likely to have introduced an error and links to them in GitLab.
+  </Card>
+  <Card title="Stack trace linking" icon="code">
+    Navigate from a stack frame directly to the corresponding line in your GitLab repository.
+  </Card>
+  <Card title="MR comments" icon="message-square">
+    When a merge request is merged, Sentry posts a comment listing the issues detected after merging.
+  </Card>
+  <Card title="Code owners" icon="users">
+    Import your `CODEOWNERS` file to automatically assign Sentry issues based on who owns the affected code.
+  </Card>
+  <Card title="Issue linking" icon="link">
+    Create or link GitLab issues directly from a Sentry issue.
+  </Card>
+  <Card title="Auto-resolve via commit message" icon="check-circle">
+    Including `Fixes PROJ-ID` in a commit message or MR description resolves the linked Sentry issue when the commit is merged.
+  </Card>
+</CardGroup>
+
+## Compared to GitHub
+
+The GitLab integration supports most of the same features as the GitHub integration, with a few differences:
+
+| Feature | GitHub | GitLab |
+|---|---|---|
+| Suspect commits | Yes | Yes |
+| Stack trace linking | Yes | Yes |
+| Code owners | Yes | Yes |
+| Issue linking | Yes | Yes |
+| PR/MR comments | Yes | Yes |
+| Issue sync (status + assignee) | Yes | Assignee and comments only |
+| Self-hosted support | GitHub Enterprise (separate integration) | Yes, built-in |
+
+## Installation
+
+<Steps>
+  <Step title="Create a GitLab OAuth application">
+    In GitLab, go to your group settings and create an OAuth application with the following settings:
+    - **Name**: Sentry
+    - **Redirect URI**: `https://sentry.io/extensions/gitlab/setup/`
+    - **Scopes**: `api`
+
+    Copy the **Application ID** and **Secret**.
+  </Step>
+  <Step title="Start the installation in Sentry">
+    Go to **Settings > Integrations** and find **GitLab** in the Source Control group. Click **Install**.
+  </Step>
+  <Step title="Fill in the configuration form">
+    Enter the following details:
+    - **GitLab URL**: The base URL of your GitLab instance. For gitlab.com, enter `https://gitlab.com/`.
+    - **GitLab Group Path**: The path of the group to connect, for example `my-group/my-subgroup`. Leave blank to integrate the entire GitLab instance.
+    - **Include subgroups**: Toggle on to include projects in subgroups.
+    - **Verify SSL**: Keep enabled unless your instance uses a self-signed certificate.
+    - **GitLab Application ID** and **GitLab Application Secret**: Paste the values from the OAuth application you created.
+  </Step>
+  <Step title="Authorize via OAuth">
+    Sentry redirects you to GitLab to complete the OAuth flow. Sign in and grant access.
+  </Step>
+</Steps>
+
+<Note>
+For self-managed GitLab instances, ensure that the Sentry server can reach your GitLab host over HTTPS. Outbound webhooks from GitLab also need to reach Sentry's webhook endpoint.
+</Note>
+
+## Stack trace linking
+
+Stack trace linking maps each stack frame to the corresponding line in your GitLab repository. Sentry resolves source paths by matching the stack frame filename against the file tree of the commits included in the release.
+
+For linking to work, your project must have a repository connected and release commits tracked.
+
+## Code owners
+
+Sentry can import your `CODEOWNERS` file and use it to assign issues.
+
+Supported `CODEOWNERS` file locations:
+- `CODEOWNERS`
+- `.gitlab/CODEOWNERS`
+- `docs/CODEOWNERS`
+
+<Steps>
+  <Step title="Go to your project settings">
+    Navigate to **Settings > Projects > [your project] > Code Owners**.
+  </Step>
+  <Step title="Sync the CODEOWNERS file">
+    Click **Sync CODEOWNERS**. Sentry fetches the file from the default branch of the linked repository.
+  </Step>
+  <Step title="Map GitLab users to Sentry users">
+    Sentry prompts you to map GitLab user handles to Sentry members to enable auto-assignment.
+  </Step>
+</Steps>
+
+## Issue linking
+
+1. Open a Sentry issue.
+2. In the **Linked Issues** sidebar section, click **Link a GitLab issue**.
+3. Search for an existing issue or create a new one.
+
+## Issue sync
+
+The GitLab integration supports optional sync of issue assignment and comments.
+
+To configure sync, go to **Settings > Integrations > GitLab > Configure**:
+
+| Option | Description |
+|---|---|
+| Sync GitLab assignment to Sentry | Assigning an issue in GitLab assigns the linked Sentry issue to the same user. |
+| Sync Sentry assignment to GitLab | Assigning an issue in Sentry assigns the linked GitLab issue to the same user. |
+| Sync Sentry comments to GitLab | Comments posted on a Sentry issue are mirrored to the linked GitLab issue. |
+
+## Auto-resolve via commit message
+
+You can resolve a Sentry issue by including a reference in a GitLab commit message or MR description:
+
+```
+Fixes PROJ-123
+```
+
+Replace `PROJ-123` with the short ID of the Sentry issue. When the commit is merged into the default branch, Sentry resolves the issue automatically.

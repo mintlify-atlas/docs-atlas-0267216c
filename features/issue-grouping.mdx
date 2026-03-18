@@ -1,0 +1,111 @@
+---
+title: Issue grouping
+description: Learn how Sentry fingerprints events to group them into issues, and how to customize grouping with fingerprint rules.
+---
+
+Sentry uses **fingerprinting** to decide which events belong together in the same issue. Every incoming event is assigned a fingerprint — a list of strings — and events with the same fingerprint are grouped into the same issue.
+
+## Default grouping
+
+When you do not configure custom rules, Sentry applies a built-in grouping strategy. The active strategy is controlled by the project's grouping configuration. Current production configuration is `newstyle:2023-01-11`; a newer `fall2025` configuration is available for projects that opt in.
+
+The default strategy inspects the event in this priority order:
+
+1. **Chained exceptions** — processes each exception in the chain using the single-exception strategy
+2. **Threads** — groups by the crashing thread's stack trace
+3. **Stacktrace** — groups by the exception type and the significant frames
+4. **Template** — for template-engine errors, groups by template path and line
+5. **CSP / security reports** — groups by report type and blocked URI
+6. **Message** — groups by the normalized error message when no stack trace is available
+
+For stack-trace-based grouping, Sentry considers only frames from your own code by default. System frames (node_modules, stdlib, etc.) are collapsed unless they are the only frames available.
+
+## Custom fingerprinting rules
+
+You can override the default grouping by providing fingerprint rules in **Project Settings → Issue Grouping → Fingerprint Rules**. Rules use a matcher syntax:
+
+```text
+# Group all database timeout errors together regardless of query
+error.type:DatabaseTimeoutError -> database-timeout
+
+# Separate each API endpoint into its own issue
+stack.function:handle_request url:*/api/v1/* -> api-request-{{ url }}
+
+# Force all payment errors into one issue
+message:"Payment declined*" -> payment-declined-issue
+```
+
+Each rule has two parts separated by ` -> `:
+
+- **Matchers** — conditions on the event (error type, stack frame, message, URL, tag, etc.)
+- **Fingerprint** — the resulting fingerprint strings; can include variables like `{{ default }}` or `{{ error.type }}`
+
+Using `{{ default }}` in the fingerprint keeps Sentry's automatic grouping for the matched dimension while adding your custom suffix.
+
+### Matcher types
+
+| Matcher | Example |
+|---|---|
+| `error.type` | `error.type:ValueError` |
+| `error.value` | `error.value:*timeout*` |
+| `stack.function` | `stack.function:process_payment` |
+| `stack.module` | `stack.module:com.example.db.*` |
+| `stack.filename` | `stack.filename:*/payments/*` |
+| `message` | `message:"NullPointerException*"` |
+| `url` | `url:*/checkout*` |
+| `tags.key` | `tags.environment:staging` |
+
+Glob patterns (`*`) are supported in matcher values.
+
+## Server-side fingerprinting
+
+Fingerprint rules set in the Sentry UI are applied server-side after the event arrives. This means:
+
+- You do not need to redeploy your application to change grouping.
+- Rules apply retroactively to new events, but existing issues are not re-grouped.
+- Rules are evaluated in order; the first matching rule wins.
+
+## SDK-level fingerprinting
+
+You can also set a fingerprint directly in the SDK before the event is sent:
+
+```python
+import sentry_sdk
+
+with sentry_sdk.push_scope() as scope:
+    scope.fingerprint = ["my-custom-fingerprint", "{{ default }}"]
+    sentry_sdk.capture_exception(exception)
+```
+
+SDK-provided fingerprints take precedence over server-side rules.
+
+## Grouping strategies
+
+Sentry ships two named grouping configurations:
+
+| Config ID | Description |
+|---|---|
+| `newstyle:2023-01-11` | Current default. Applies JS single-frame URL normalization and other compatibility shims. |
+| `newstyle:fall-2025` | Updated config with improved exception subcomponent ordering, better parameterization, and stricter unknown-variable handling. |
+
+New projects are created with the latest stable config. Existing projects can upgrade in **Project Settings → Issue Grouping → Grouping Config**.
+
+## Merging and unmerging issues
+
+When you know two issues represent the same bug but were grouped separately, you can **merge** them:
+
+<Steps>
+  <Step title="Select issues">
+    Check the boxes next to the issues you want to combine on the issue list page.
+  </Step>
+  <Step title="Merge">
+    Click **Merge** in the bulk action toolbar. All events from the secondary issues are moved into the primary issue.
+  </Step>
+  <Step title="Unmerge (optional)">
+    Open the issue, go to the **Similar Issues** tab, and select individual events to split back out into separate issues.
+  </Step>
+</Steps>
+
+<Warning>
+Merging is partially reversible: you can unmerge individual fingerprint groups but cannot separate events that were already in the same fingerprint bucket.
+</Warning>

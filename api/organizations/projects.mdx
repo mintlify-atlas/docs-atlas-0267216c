@@ -1,0 +1,256 @@
+---
+title: Projects
+description: List, create, update, and delete projects within a Sentry organization.
+---
+
+Projects in Sentry represent a single application or service you want to monitor. These endpoints let you manage projects within an organization.
+
+## List projects in an organization
+
+```
+GET /api/0/organizations/{organization_id_or_slug}/projects/
+```
+
+Returns a list of projects bound to an organization.
+
+**Required scope:** `project:read`
+
+### Path parameters
+
+<ParamField path="organization_id_or_slug" type="string" required>
+  The ID or slug of the organization.
+</ParamField>
+
+### Query parameters
+
+<ParamField query="cursor" type="string">
+  Pagination cursor from the `Link` response header.
+</ParamField>
+
+### Example request
+
+```bash
+curl https://sentry.io/api/0/organizations/my-org/projects/ \
+  -H "Authorization: Bearer <token>"
+```
+
+### Example response
+
+```json
+[
+  {
+    "id": "2",
+    "slug": "pump-station",
+    "name": "Pump Station",
+    "platform": "python",
+    "dateCreated": "2018-11-06T21:19:58.536Z",
+    "isBookmarked": false,
+    "isMember": true,
+    "hasAccess": true,
+    "firstEvent": "2018-11-06T21:19:58.639Z",
+    "firstTransactionEvent": false,
+    "features": [],
+    "status": "active"
+  }
+]
+```
+
+---
+
+## Create a project
+
+```
+POST /api/0/teams/{organization_id_or_slug}/{team_id_or_slug}/projects/
+```
+
+Creates a new project bound to a team.
+
+**Required scope:** `project:write`
+
+### Path parameters
+
+<ParamField path="organization_id_or_slug" type="string" required>
+  The ID or slug of the organization.
+</ParamField>
+
+<ParamField path="team_id_or_slug" type="string" required>
+  The ID or slug of the team that will own the project.
+</ParamField>
+
+### Request body
+
+<ParamField body="name" type="string" required>
+  The name of the project.
+</ParamField>
+
+<ParamField body="slug" type="string">
+  A unique slug for the project. Generated from the name if not provided.
+</ParamField>
+
+<ParamField body="platform" type="string">
+  The platform identifier (e.g. `python`, `javascript`, `java`).
+</ParamField>
+
+### Example request
+
+```bash
+curl -X POST https://sentry.io/api/0/teams/my-org/my-team/projects/ \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Backend API", "platform": "python"}'
+```
+
+---
+
+## Retrieve a project
+
+```
+GET /api/0/projects/{organization_id_or_slug}/{project_id_or_slug}/
+```
+
+Returns details for a single project.
+
+**Required scope:** `project:read`
+
+### Path parameters
+
+<ParamField path="organization_id_or_slug" type="string" required>
+  The ID or slug of the organization.
+</ParamField>
+
+<ParamField path="project_id_or_slug" type="string" required>
+  The ID or slug of the project.
+</ParamField>
+
+### Example request
+
+```bash
+curl https://sentry.io/api/0/projects/my-org/pump-station/ \
+  -H "Authorization: Bearer <token>"
+```
+
+### Response fields
+
+<ResponseField name="id" type="string">
+  The unique ID of the project.
+</ResponseField>
+
+<ResponseField name="slug" type="string">
+  The URL-friendly identifier for the project.
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  The display name of the project.
+</ResponseField>
+
+<ResponseField name="platform" type="string">
+  The primary platform of the project (e.g. `python`, `javascript`).
+</ResponseField>
+
+<ResponseField name="dateCreated" type="string">
+  ISO 8601 timestamp of when the project was created.
+</ResponseField>
+
+<ResponseField name="isBookmarked" type="boolean">
+  Whether the authenticated user has bookmarked this project.
+</ResponseField>
+
+<ResponseField name="isMember" type="boolean">
+  Whether the authenticated user is a member of a team assigned to this project.
+</ResponseField>
+
+<ResponseField name="hasAccess" type="boolean">
+  Whether the authenticated user has access to this project.
+</ResponseField>
+
+<ResponseField name="firstEvent" type="string | null">
+  ISO 8601 timestamp of the first event received, or `null` if no events have been received.
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  The project status. One of `active` or `deleted`.
+</ResponseField>
+
+---
+
+## Update a project
+
+```
+PUT /api/0/projects/{organization_id_or_slug}/{project_id_or_slug}/
+```
+
+Updates settings for an existing project.
+
+**Required scope:** `project:write`
+
+### Path parameters
+
+<ParamField path="organization_id_or_slug" type="string" required>
+  The ID or slug of the organization.
+</ParamField>
+
+<ParamField path="project_id_or_slug" type="string" required>
+  The ID or slug of the project.
+</ParamField>
+
+### Request body
+
+<ParamField body="name" type="string">
+  The new display name for the project.
+</ParamField>
+
+<ParamField body="slug" type="string">
+  A new URL slug for the project.
+</ParamField>
+
+<ParamField body="platform" type="string">
+  The project's primary platform.
+</ParamField>
+
+<ParamField body="isBookmarked" type="boolean">
+  Whether the current user bookmarks the project.
+</ParamField>
+
+### Example request
+
+```bash
+curl -X PUT https://sentry.io/api/0/projects/my-org/pump-station/ \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Pump Station v2"}'
+```
+
+---
+
+## Delete a project
+
+```
+DELETE /api/0/projects/{organization_id_or_slug}/{project_id_or_slug}/
+```
+
+Permanently deletes a project and all of its data.
+
+**Required scope:** `project:admin`
+
+<Warning>
+Deleting a project is permanent and cannot be undone. All issues, events, and releases associated with the project will be removed.
+</Warning>
+
+### Path parameters
+
+<ParamField path="organization_id_or_slug" type="string" required>
+  The ID or slug of the organization.
+</ParamField>
+
+<ParamField path="project_id_or_slug" type="string" required>
+  The ID or slug of the project to delete.
+</ParamField>
+
+### Example request
+
+```bash
+curl -X DELETE https://sentry.io/api/0/projects/my-org/pump-station/ \
+  -H "Authorization: Bearer <token>"
+```
+
+A successful deletion returns `204 No Content`.

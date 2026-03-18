@@ -1,0 +1,112 @@
+---
+title: Issues
+description: Understand how Sentry groups related errors into issues and how to triage, assign, and resolve them.
+---
+
+An **issue** in Sentry is a group of related error events that share the same root cause. Every time your application throws an exception or sends an error event, Sentry determines whether it belongs to an existing issue or creates a new one. This grouping lets you track a single bug across hundreds of occurrences without managing each event individually.
+
+## Issue states
+
+Every issue moves through a lifecycle represented by its state:
+
+<CardGroup cols={2}>
+  <Card title="Unresolved" icon="circle-x">
+    The default state for new issues. The bug is known and has not been fixed.
+  </Card>
+  <Card title="Resolved" icon="circle-check">
+    Marked fixed, either manually or automatically when a new release is deployed.
+  </Card>
+  <Card title="Ignored" icon="bell-slash">
+    Sentry will not alert on this issue until conditions you set are met (for example, it occurs more than 100 times or affects more than 10 users).
+  </Card>
+  <Card title="Archived" icon="archive">
+    Removed from the default issue list. Archived issues still capture new events and resurface automatically if activity spikes.
+  </Card>
+</CardGroup>
+
+<Note>
+When an issue is resolved and the same error appears in a later release, Sentry automatically sets its state back to **Unresolved** and marks it as a regression.
+</Note>
+
+## Issue details page
+
+Clicking an issue opens the issue details page, which gives you everything you need to reproduce and fix the bug.
+
+### Stack trace
+
+The stack trace shows the exact sequence of function calls that led to the error. Sentry highlights the frames most likely to be in your own code, and collapses vendor or framework frames so you can focus on what matters.
+
+### Breadcrumbs
+
+Breadcrumbs are a chronological log of events that occurred before the error — HTTP requests, database queries, log messages, UI interactions, and more. They let you reconstruct the user's journey up to the point of failure.
+
+### User context
+
+When you configure the Sentry SDK with user information, the issue detail shows the user's ID, email, username, and IP address. You can also see how many unique users have encountered this issue.
+
+### Tags
+
+Tags are key–value pairs attached to events (for example, `environment:production`, `browser:Chrome`). You can filter, search, and aggregate issues by any tag.
+
+### Related events
+
+The **Events** tab lists every individual event captured for this issue, with timestamps and relevant metadata. You can compare events to understand how behavior changes across versions or environments.
+
+## Issue actions
+
+### Resolve
+
+Mark an issue as fixed. You can resolve immediately, resolve in the next release, or resolve in a specific release. If the error recurs in a later release, Sentry automatically reopens it as a regression.
+
+### Assign
+
+Assign an issue to a team member or a team. Sentry also supports **Code Owners** rules that automatically route issues to the right owner based on the file path in the stack trace and your CODEOWNERS or Sentry ownership rules.
+
+### Ignore
+
+Suppress alerts for an issue until a threshold is crossed:
+
+- For a time period (for example, ignore for 24 hours)
+- Until it occurs N more times
+- Until it affects N more users
+
+### Merge
+
+Combine two or more issues that you know represent the same bug. After merging, all events funnel into a single issue. You can unmerge them later from the issue details page.
+
+### Archive
+
+Remove an issue from the default inbox view without resolving it. Archived issues re-surface automatically when Sentry detects a significant increase in activity.
+
+## Suspect commits and code owners
+
+Sentry uses your source control integration to identify the commit most likely responsible for an issue. It compares the stack trace file paths against commits in your repository and surfaces the **suspect commit** with the author, diff, and a link to the code.
+
+Code owners lets you define routing rules that map file paths or URL patterns to teams or individuals:
+
+```text
+# Example Sentry ownership rules
+path:src/payments/* payments-team
+path:src/auth/*    auth-team#alice
+url:*/checkout*    payments-team
+```
+
+When an issue matches a rule, Sentry auto-assigns it and notifies the owner.
+
+## Issue search and filtering
+
+The issue list supports a powerful search syntax. You can filter by:
+
+- **Status**: `is:unresolved`, `is:resolved`, `is:ignored`
+- **Assignment**: `assigned:me`, `assigned:team-name`
+- **First seen / last seen**: `firstSeen:>2024-01-01`
+- **Times seen**: `times_seen:>100`
+- **Tags**: `browser:Chrome`, `environment:production`
+- **User**: `user.email:alice@example.com`
+- **Priority**: `issue.priority:high`
+
+You can also sort by date first seen, date last seen, number of events, or number of users affected.
+
+<Tip>
+Save frequently used searches as **saved searches** to quickly return to your most important views.
+</Tip>

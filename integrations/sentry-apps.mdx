@@ -1,0 +1,255 @@
+---
+title: Sentry Apps
+description: Build internal integrations and published Sentry Apps using the Sentry Developer Platform. Extend Sentry with webhooks, UI components, and OAuth-based integrations.
+---
+
+The Sentry Developer Platform lets you build custom integrations on top of Sentry. You can create **internal integrations** for your own organization or **published Sentry Apps** that are available to all Sentry users.
+
+## Internal integrations vs. published apps
+
+<Tabs>
+  <Tab title="Internal integrations">
+    Internal integrations are private to your Sentry organization. They are the fastest way to build a custom workflow, automation, or data pipeline on top of Sentry.
+
+    Use cases:
+    - Receive webhooks for Sentry events and trigger custom workflows
+    - Create UI components that appear in the Sentry issue detail sidebar
+    - Automate issue triage or routing based on error data
+  </Tab>
+  <Tab title="Published Sentry Apps">
+    Published Sentry Apps are listed in the Sentry integrations directory and can be installed by any Sentry organization.
+
+    Use cases:
+    - Build a third-party integration to connect Sentry to your product
+    - Add Sentry alert notifications to a communication platform
+    - Provide issue linking between Sentry and your issue tracker
+  </Tab>
+</Tabs>
+
+## What Sentry Apps can do
+
+<CardGroup cols={2}>
+  <Card title="Webhooks" icon="webhook">
+    Subscribe to events (issues, errors, comments, alerts) and receive HTTP POST requests to your endpoint.
+  </Card>
+  <Card title="Issue link component" icon="link">
+    Add a custom **Link Issue** button to the Sentry issue sidebar that opens a modal in your app.
+  </Card>
+  <Card title="Stacktrace link component" icon="code">
+    Map stack frames to URLs in your system for code navigation.
+  </Card>
+  <Card title="Alert rule action" icon="bell">
+    Add a custom action type to Sentry alert rules so users can trigger workflows in your app.
+  </Card>
+  <Card title="OAuth" icon="lock">
+    Use standard OAuth 2.0 to authenticate users in your app with their Sentry identity.
+  </Card>
+  <Card title="Service hooks" icon="zap">
+    Receive HTTP webhooks for raw Sentry events scoped to specific projects.
+  </Card>
+</CardGroup>
+
+## Creating a Sentry App
+
+<Steps>
+  <Step title="Open the developer settings">
+    In Sentry, go to **Settings > Developer Settings**. Click **Create New Internal Integration** or **Create New Public Integration**.
+  </Step>
+  <Step title="Fill in the basic information">
+    Provide:
+    - **Name**: The display name of your integration.
+    - **Webhook URL**: The HTTPS endpoint where Sentry will send webhook payloads.
+    - **Redirect URL**: The OAuth callback URL (required for public apps or if using OAuth).
+    - **Schema**: A JSON schema defining the UI components your app provides (optional).
+  </Step>
+  <Step title="Set permissions">
+    Select the scopes your app needs. Scopes control what data your app can read or write via the Sentry API. Common scopes include:
+
+    | Scope | Access |
+    |---|---|
+    | `event:read` | Read events and issues |
+    | `event:write` | Update issue status and assignments |
+    | `project:read` | Read project configuration |
+    | `org:read` | Read organization data |
+    | `member:read` | Read member information |
+  </Step>
+  <Step title="Subscribe to webhook events">
+    Select the event resources your app should receive webhooks for:
+
+    | Resource | Events |
+    |---|---|
+    | **Issue** | `issue.created`, `issue.resolved`, `issue.ignored`, `issue.assigned`, `issue.unresolved` |
+    | **Error** | `error.created` |
+    | **Comment** | `comment.created`, `comment.updated`, `comment.deleted` |
+    | **Installation** | `installation.created`, `installation.deleted` |
+    | **Metric alert** | `metric_alert.open`, `metric_alert.resolved`, `metric_alert.critical`, `metric_alert.warning` |
+    | **Issue alert** | `event_alert.triggered` |
+  </Step>
+  <Step title="Add UI components (optional)">
+    Define UI components in the **Schema** field using JSON. See the UI components section below for details.
+  </Step>
+  <Step title="Install and get credentials">
+    After saving, install the app on your organization. Sentry generates a client ID and client secret (for public apps) or an API token (for internal integrations).
+  </Step>
+</Steps>
+
+## OAuth flow
+
+Published Sentry Apps use OAuth 2.0 to authenticate users.
+
+```
+1. Redirect user to:
+   https://sentry.io/oauth/authorize/?response_type=code&client_id=YOUR_CLIENT_ID
+
+2. User authorizes your app.
+
+3. Sentry redirects to your redirect_url with ?code=AUTH_CODE
+
+4. Exchange code for token:
+   POST https://sentry.io/api/0/sentry-app-installations/{uuid}/authorizations/
+   Body: { grant_type: "authorization_code", code: "AUTH_CODE", client_secret: "YOUR_SECRET" }
+
+5. Sentry returns access_token and refresh_token.
+```
+
+## Webhook event types
+
+Sentry sends webhook payloads as HTTP POST requests to your configured endpoint. Each payload includes a `action` and `data` field.
+
+### Issue events
+
+```json
+{
+  "action": "created",
+  "installation": { "uuid": "..." },
+  "data": {
+    "issue": {
+      "id": "123",
+      "title": "TypeError: Cannot read property 'foo' of undefined",
+      "status": "unresolved",
+      "project": { "id": "1", "slug": "my-project" }
+    }
+  },
+  "actor": { "type": "user", "id": "456", "name": "Jane Smith" }
+}
+```
+
+### Error events
+
+```json
+{
+  "action": "created",
+  "installation": { "uuid": "..." },
+  "data": {
+    "error": {
+      "event_id": "abc123",
+      "message": "TypeError: Cannot read property 'foo' of undefined",
+      "level": "error",
+      "project": "my-project"
+    }
+  }
+}
+```
+
+## HMAC signature verification
+
+Sentry signs webhook payloads with an HMAC-SHA256 signature so you can verify the request came from Sentry.
+
+The signature is in the `sentry-hook-signature` HTTP header.
+
+```python
+import hmac
+import hashlib
+
+def verify_signature(secret: str, payload: bytes, signature: str) -> bool:
+    expected = hmac.new(
+        key=secret.encode("utf-8"),
+        msg=payload,
+        digestmod=hashlib.sha256,
+    ).hexdigest()
+    return hmac.compare_digest(expected, signature)
+```
+
+<Warning>
+Always verify the HMAC signature before processing webhook payloads to prevent spoofed requests.
+</Warning>
+
+## UI components
+
+### Issue link component
+
+Adds a **Link [App Name] Issue** button to the Sentry issue sidebar. When clicked, it opens a modal defined by your schema.
+
+```json
+{
+  "elements": [
+    {
+      "type": "issue-link",
+      "link": {
+        "uri": "/link-issue",
+        "required_fields": [
+          {
+            "type": "select",
+            "label": "Issue",
+            "name": "issue_id",
+            "uri": "/search-issues"
+          }
+        ]
+      },
+      "create": {
+        "uri": "/create-issue",
+        "required_fields": [
+          {
+            "type": "text",
+            "label": "Title",
+            "name": "title"
+          }
+        ]
+      }
+    }
+  ]
+}
+```
+
+### Stacktrace link component
+
+Maps Sentry stack frames to URLs in your system.
+
+```json
+{
+  "elements": [
+    {
+      "type": "stacktrace-link",
+      "uri": "/stacktrace-redirect"
+    }
+  ]
+}
+```
+
+Sentry calls your `uri` with query parameters including `lineNo`, `filename`, and `absPath`.
+
+### Alert rule action component
+
+Adds a custom action type to Sentry alert rules.
+
+```json
+{
+  "elements": [
+    {
+      "type": "alert-rule-action",
+      "title": "Notify My Service",
+      "settings": {
+        "type": "alert-rule-settings",
+        "uri": "/alert-rule-action",
+        "required_fields": [
+          {
+            "type": "text",
+            "label": "Channel",
+            "name": "channel"
+          }
+        ]
+      }
+    }
+  ]
+}
+```

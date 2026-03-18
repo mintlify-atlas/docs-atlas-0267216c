@@ -1,0 +1,82 @@
+---
+title: Logs
+description: Collect structured log output alongside your errors and traces to get full context when debugging.
+---
+
+Sentry Logs lets you capture structured log messages from your application and view them in the context of the errors and traces they relate to. Instead of switching between your error tracker and a separate log aggregator, you can see the log output that led to an error directly in the Sentry UI.
+
+## Emitting logs via the SDK
+
+The Sentry SDK provides a logging API that mirrors standard log levels. Enable log capture by setting `enable_logs=True` in your SDK configuration:
+
+<CodeGroup>
+
+```python Python
+import sentry_sdk
+from sentry_sdk.integrations.logging import LoggingIntegration
+
+sentry_sdk.init(
+    dsn="...",
+    enable_logs=True,
+)
+
+# Use the Sentry logger directly
+logger = sentry_sdk.get_logger()
+logger.info("User logged in", user_id=user.id)
+logger.warning("Slow query detected", duration_ms=850, query=sql)
+logger.error("Payment failed", order_id=order.id, reason=str(e))
+```
+
+```javascript Node.js
+import * as Sentry from "@sentry/node";
+
+Sentry.init({
+  dsn: "...",
+  _experiments: { enableLogs: true },
+});
+
+const logger = Sentry.logger;
+logger.info("User logged in", { userId: user.id });
+logger.warn("Slow query detected", { durationMs: 850 });
+logger.error("Payment failed", { orderId: order.id });
+```
+
+</CodeGroup>
+
+## Log levels
+
+Sentry recognizes the following log levels, from lowest to highest severity:
+
+| Level | Description |
+|---|---|
+| `trace` | Very detailed diagnostic information |
+| `debug` | Diagnostic information useful during development |
+| `info` | Confirmation that things are working as expected |
+| `warning` | Something unexpected happened but the operation succeeded |
+| `error` | An error occurred that prevented an operation from completing |
+| `fatal` | A critical failure that may cause the application to crash |
+
+## Filtering logs
+
+In the **Logs** section of Sentry you can:
+
+- Filter by log level (for example, show only `error` and above)
+- Search by message text or any structured attribute
+- Filter by project, environment, and time range
+- See the trace context associated with each log entry
+
+## Correlating logs with traces and errors
+
+When a log message is emitted inside an active trace, Sentry automatically attaches the current `trace_id`, `span_id`, and transaction name to the log entry. This means:
+
+- From a trace or span, you can see all log messages emitted during that operation.
+- From a log entry, you can jump directly to the associated trace to see the full request context.
+- From an error issue, the breadcrumbs panel shows log messages that occurred in the same session or trace before the error.
+
+<Tip>
+Use structured attributes (key-value pairs) rather than interpolating variables into log message strings. Structured attributes are indexed and can be filtered in the Logs UI, while free-form text in the message body is only searchable via full-text search.
+</Tip>
+
+<Note>
+Sentry Logs is distinct from the breadcrumbs feature. Breadcrumbs are captured automatically by SDK integrations and shown on the issue detail page. Logs are explicit API calls that produce standalone log entries stored and queryable in the Logs section.
+</Note>

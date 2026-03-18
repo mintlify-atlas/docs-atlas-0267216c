@@ -1,0 +1,109 @@
+---
+title: "Sentry Documentation"
+description: "Developer-first error tracking and performance monitoring. Detect, trace, and fix issues faster."
+---
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Get up and running with Sentry in minutes. Connect your first project and start capturing errors.
+  </Card>
+  <Card title="Features" icon="star" href="/features/issues">
+    Explore error monitoring, performance tracing, session replays, and more.
+  </Card>
+  <Card title="Integrations" icon="plug" href="/integrations/github">
+    Connect Sentry with GitHub, Jira, Slack, and dozens of other tools your team uses.
+  </Card>
+  <Card title="API Reference" icon="code" href="/api/authentication">
+    Automate workflows and build on top of Sentry using the REST API.
+  </Card>
+</CardGroup>
+
+## What is Sentry?
+
+Sentry is a developer-first **error tracking and performance monitoring** platform. It captures unhandled exceptions, traces slow transactions, records session replays, and surfaces the root cause of issues — so you can fix bugs faster and ship with confidence.
+
+Sentry is available as a **cloud-hosted service** at [sentry.io](https://sentry.io) and as a **self-hosted** deployment you run on your own infrastructure.
+
+## Key capabilities
+
+<CardGroup cols={3}>
+  <Card title="Error Monitoring" icon="bug">
+    Capture, group, and triage every unhandled error across your stack with intelligent deduplication and stack traces.
+  </Card>
+  <Card title="Performance Monitoring" icon="gauge">
+    Measure transaction latency, database query performance, and frontend Web Vitals in real time.
+  </Card>
+  <Card title="Distributed Tracing" icon="diagram-project">
+    Follow a request across microservices with full end-to-end traces and span-level visibility.
+  </Card>
+  <Card title="Session Replays" icon="video">
+    Replay exactly what a user experienced before an error — DOM changes, network requests, and console logs.
+  </Card>
+  <Card title="Profiling" icon="chart-line">
+    Find performance bottlenecks at the function level with continuous and transaction-based profiling.
+  </Card>
+  <Card title="Crons & Uptime" icon="clock">
+    Monitor scheduled jobs and external endpoints so you know the moment something stops working.
+  </Card>
+  <Card title="Dashboards" icon="chart-bar">
+    Build custom dashboards with real-time charts over errors, transactions, metrics, and more.
+  </Card>
+  <Card title="AI Triage with Seer" icon="robot">
+    Let Seer automatically investigate issues, suggest root causes, and recommend fixes.
+  </Card>
+  <Card title="Integrations" icon="puzzle-piece">
+    Connect with GitHub, GitLab, Jira, Slack, PagerDuty, and many more tools out of the box.
+  </Card>
+</CardGroup>
+
+## How Sentry works
+
+When you install a Sentry SDK in your application, it automatically captures errors and performance data and sends it to Sentry. The platform groups related events, enriches them with context (stack traces, breadcrumbs, user info), and notifies your team through your preferred channels.
+
+```
+Your App  ──SDK──▶  Sentry Relay  ──▶  Sentry Platform  ──▶  Your Team
+```
+
+1. **SDK** — A lightweight library installed in your app. Sentry SDKs exist for [JavaScript](https://github.com/getsentry/sentry-javascript), [Python](https://github.com/getsentry/sentry-python), [Ruby](https://github.com/getsentry/sentry-ruby), [Go](https://github.com/getsentry/sentry-go), [Java/Kotlin](https://github.com/getsentry/sentry-java), [iOS/macOS](https://github.com/getsentry/sentry-cocoa), [Android](https://github.com/getsentry/sentry-java), [.NET](https://github.com/getsentry/sentry-dotnet), [React Native](https://github.com/getsentry/sentry-react-native), and [more](https://docs.sentry.io/platforms/).
+2. **Relay** — An edge proxy that validates, normalizes, and forwards event payloads while protecting your DSN.
+3. **Platform** — The core application that processes events, groups issues, evaluates alert rules, and serves the UI.
+
+## Official SDKs
+
+<CardGroup cols={3}>
+  <Card title="JavaScript" icon="js" href="https://github.com/getsentry/sentry-javascript">
+    Browser, Node.js, React, Vue, Angular, Next.js, and more
+  </Card>
+  <Card title="Python" icon="python" href="https://github.com/getsentry/sentry-python">
+    Django, Flask, FastAPI, Celery, and more
+  </Card>
+  <Card title="React Native" icon="mobile" href="https://github.com/getsentry/sentry-react-native">
+    iOS and Android via React Native
+  </Card>
+  <Card title="Go" icon="golang" href="https://github.com/getsentry/sentry-go">
+    Standard library and popular frameworks
+  </Card>
+  <Card title="Java / Kotlin" icon="java" href="https://github.com/getsentry/sentry-java">
+    Spring Boot, Android, and more
+  </Card>
+  <Card title="Ruby" icon="gem" href="https://github.com/getsentry/sentry-ruby">
+    Rails, Sidekiq, and more
+  </Card>
+</CardGroup>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Create your first project" icon="folder-plus" href="/quickstart">
+    Follow the quickstart to instrument your app and see your first error in Sentry.
+  </Card>
+  <Card title="Understand core concepts" icon="book" href="/concepts/projects">
+    Learn about projects, organizations, environments, and releases.
+  </Card>
+  <Card title="Set up alerts" icon="bell" href="/features/alerts">
+    Configure alert rules so your team is notified when things break.
+  </Card>
+  <Card title="Self-host Sentry" icon="server" href="/self-hosted/installation">
+    Run Sentry on your own infrastructure using Docker Compose.
+  </Card>
+</CardGroup>

@@ -1,0 +1,117 @@
+---
+title: Alerts
+description: Configure issue alerts and metric alerts to get notified when something goes wrong in your application.
+---
+
+Sentry has two types of alerts: **issue alerts** and **metric alerts**. Both are configured as rules that define when to trigger, how severe the situation is, and how to notify your team.
+
+## Issue alerts
+
+Issue alerts fire when an event matching specific conditions occurs. They operate on individual issues and their events.
+
+### Conditions
+
+An issue alert rule evaluates a set of **conditions** (triggers), optional **filters** (narrow which events qualify), and **actions** (what to do when triggered).
+
+Available conditions include:
+
+| Condition | Description |
+|---|---|
+| A new issue is created | Fires the first time an issue is seen |
+| The issue changes state to regression | Fires when a resolved issue reappears |
+| An issue is seen more than N times in M minutes | Frequency threshold |
+| An issue is seen by more than N users in M minutes | User-impact threshold |
+| A high-priority issue is created | Fires for P0/P1 severity issues |
+| An issue is re-triggered after being ignored | Fires when ignore conditions expire |
+
+### Filters
+
+Filters narrow the set of events that satisfy a condition:
+
+- Event attribute matches a value (for example, `platform == python`)
+- Issue tag contains a value
+- Event level is at or above a threshold
+- The issue is assigned or unassigned
+- The issue has been seen in the last N days
+
+### Actions
+
+When conditions and filters are met, Sentry executes one or more actions:
+
+- Send an email to team members or issue owners
+- Send a Slack, Microsoft Teams, or Discord message
+- Create a PagerDuty incident
+- Create a Jira or GitHub issue
+- Send a webhook
+- Trigger a Sentry notification action
+
+## Metric alerts
+
+Metric alerts monitor aggregate measurements across all events in a project — not individual issues. They are suitable for alerting on error rates, transaction latency, throughput, and custom metrics.
+
+### Alert anatomy
+
+Every metric alert rule has the following components:
+
+<Steps>
+  <Step title="Data source">
+    Choose what to measure: errors, transactions (performance), sessions (crash-free rate), or custom metrics.
+  </Step>
+  <Step title="Metric and aggregation">
+    Select the metric (for example, `p95(transaction.duration)`, `count()`, `count_unique(user)`) and the time window (1 minute to 1 day).
+  </Step>
+  <Step title="Thresholds">
+    Set a **critical** threshold and an optional **warning** threshold. Sentry transitions between `warning → critical → resolved` as the metric crosses these values.
+  </Step>
+  <Step title="Actions">
+    Configure who gets notified at each severity level (warning and critical).
+  </Step>
+</Steps>
+
+### Alert statuses
+
+| Status | Description |
+|---|---|
+| `resolved` | Metric is below the warning threshold |
+| `warning` | Metric is above the warning threshold but below critical |
+| `critical` | Metric is above the critical threshold |
+
+### Example metric alert
+
+Alert when the p95 response time for the checkout transaction exceeds 2 seconds:
+
+- **Metric**: `p95(transaction.duration)`
+- **Filter**: `transaction:/api/checkout`
+- **Warning threshold**: 1000 ms
+- **Critical threshold**: 2000 ms
+- **Time window**: 5 minutes
+- **Action (warning)**: Notify Slack `#backend-alerts`
+- **Action (critical)**: Page on-call via PagerDuty
+
+## Cooldown period
+
+To prevent alert fatigue, you can configure a **resolve timeout** (also called cooldown). Sentry waits until the metric stays below the threshold for the specified duration before marking the alert as resolved and sending a recovery notification.
+
+## Creating an alert rule
+
+<Steps>
+  <Step title="Open alerts">
+    Navigate to **Alerts** in the sidebar of your project.
+  </Step>
+  <Step title="Create rule">
+    Click **Create Alert** and choose between an issue alert or a metric alert.
+  </Step>
+  <Step title="Configure conditions">
+    Add conditions, filters, and the time window.
+  </Step>
+  <Step title="Set thresholds and actions">
+    Define warning and critical thresholds, then add notification actions for each level.
+  </Step>
+  <Step title="Name and save">
+    Give the rule a descriptive name and save it. It activates immediately.
+  </Step>
+</Steps>
+
+<Tip>
+Use the **Preview** panel while building a rule to see how often it would have fired historically based on your recent data.
+</Tip>

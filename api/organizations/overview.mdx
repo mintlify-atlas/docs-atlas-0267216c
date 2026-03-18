@@ -1,0 +1,144 @@
+---
+title: Organizations
+description: Retrieve and manage the organizations you belong to using the Sentry REST API.
+---
+
+Organization endpoints allow you to list organizations you have access to and retrieve detailed information about a specific organization.
+
+## Base URL
+
+All Sentry API requests are made to:
+
+```
+https://sentry.io/api/0/
+```
+
+For the EU data region, use `https://de.sentry.io/api/0/`.
+
+## List organizations
+
+```
+GET /api/0/organizations/
+```
+
+Returns a list of organizations that the authenticated user belongs to.
+
+**Required scope:** `org:read`
+
+### Query parameters
+
+<ParamField query="owner" type="boolean">
+  Restricts results to organizations where the authenticated user is an owner.
+</ParamField>
+
+<ParamField query="cursor" type="string">
+  Pagination cursor returned in the `Link` response header. Pass this value to retrieve the next page of results.
+</ParamField>
+
+### Example request
+
+```bash
+curl https://sentry.io/api/0/organizations/ \
+  -H "Authorization: Bearer <token>"
+```
+
+### Example response
+
+```json
+[
+  {
+    "id": "1",
+    "slug": "the-interstellar-jurisdiction",
+    "name": "The Interstellar Jurisdiction",
+    "dateCreated": "2018-11-06T21:19:55.101Z",
+    "status": {
+      "id": "active",
+      "name": "active"
+    },
+    "features": ["performance-view", "releases"],
+    "isEarlyAdopter": false
+  }
+]
+```
+
+---
+
+## Retrieve an organization
+
+```
+GET /api/0/organizations/{organization_id_or_slug}/
+```
+
+Returns details for a single organization.
+
+**Required scope:** `org:read`
+
+### Path parameters
+
+<ParamField path="organization_id_or_slug" type="string" required>
+  The ID or slug of the organization to retrieve.
+</ParamField>
+
+### Example request
+
+```bash
+curl https://sentry.io/api/0/organizations/the-interstellar-jurisdiction/ \
+  -H "Authorization: Bearer <token>"
+```
+
+### Example response
+
+```json
+{
+  "id": "1",
+  "slug": "the-interstellar-jurisdiction",
+  "name": "The Interstellar Jurisdiction",
+  "dateCreated": "2018-11-06T21:19:55.101Z",
+  "status": {
+    "id": "active",
+    "name": "active"
+  },
+  "features": ["performance-view", "releases"],
+  "isEarlyAdopter": false,
+  "requiresSso": false,
+  "storeCrashReports": 0
+}
+```
+
+### Response fields
+
+<ResponseField name="id" type="string">
+  The unique ID of the organization.
+</ResponseField>
+
+<ResponseField name="slug" type="string">
+  The URL-friendly identifier for the organization.
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  The display name of the organization.
+</ResponseField>
+
+<ResponseField name="dateCreated" type="string">
+  ISO 8601 timestamp of when the organization was created.
+</ResponseField>
+
+<ResponseField name="status" type="object">
+  The current status of the organization. Contains `id` and `name` fields. Common value: `active`.
+</ResponseField>
+
+<ResponseField name="features" type="array">
+  A list of feature flags enabled for the organization.
+</ResponseField>
+
+<ResponseField name="isEarlyAdopter" type="boolean">
+  Whether the organization is enrolled in early adopter features.
+</ResponseField>
+
+<ResponseField name="requiresSso" type="boolean">
+  Whether SSO is required to access the organization.
+</ResponseField>
+
+<ResponseField name="storeCrashReports" type="integer">
+  The number of crash reports stored per issue. `0` means disabled.
+</ResponseField>

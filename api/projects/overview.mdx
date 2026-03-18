@@ -1,0 +1,184 @@
+---
+title: Projects
+description: Overview of project-scoped Sentry API endpoints for managing settings, keys, and statistics.
+---
+
+Project endpoints give you access to project-level data including configuration, DSN keys, and usage statistics. Most project endpoints require both an organization and project identifier in the path.
+
+## Path structure
+
+Project-scoped endpoints follow this pattern:
+
+```
+/api/0/projects/{organization_id_or_slug}/{project_id_or_slug}/
+```
+
+## Retrieve a project
+
+```
+GET /api/0/projects/{organization_id_or_slug}/{project_id_or_slug}/
+```
+
+Returns the full configuration for a single project.
+
+**Required scope:** `project:read`
+
+### Path parameters
+
+<ParamField path="organization_id_or_slug" type="string" required>
+  The ID or slug of the organization.
+</ParamField>
+
+<ParamField path="project_id_or_slug" type="string" required>
+  The ID or slug of the project.
+</ParamField>
+
+### Example request
+
+```bash
+curl https://sentry.io/api/0/projects/my-org/my-project/ \
+  -H "Authorization: Bearer <token>"
+```
+
+### Example response
+
+```json
+{
+  "id": "2",
+  "slug": "pump-station",
+  "name": "Pump Station",
+  "platform": "python",
+  "dateCreated": "2018-11-06T21:19:58.536Z",
+  "isBookmarked": false,
+  "isMember": true,
+  "hasAccess": true,
+  "firstEvent": "2018-11-06T21:19:58.639Z",
+  "status": "active",
+  "team": {
+    "id": "1",
+    "slug": "engineering",
+    "name": "Engineering"
+  },
+  "teams": [
+    {
+      "id": "1",
+      "slug": "engineering",
+      "name": "Engineering"
+    }
+  ]
+}
+```
+
+---
+
+## Project keys (DSN)
+
+```
+GET /api/0/projects/{organization_id_or_slug}/{project_id_or_slug}/keys/
+```
+
+Returns a list of client keys (DSNs) for the project. Each key contains the DSN used to configure a Sentry SDK to send events to this project.
+
+**Required scope:** `project:read`
+
+### Example request
+
+```bash
+curl https://sentry.io/api/0/projects/my-org/my-project/keys/ \
+  -H "Authorization: Bearer <token>"
+```
+
+### Example response
+
+```json
+[
+  {
+    "id": "abc123",
+    "name": "Default",
+    "label": "Default",
+    "public": "abc123publickey",
+    "secret": "abc123secretkey",
+    "dsn": {
+      "secret": "https://abc123publickey:abc123secretkey@o1.ingest.sentry.io/2",
+      "public": "https://abc123publickey@o1.ingest.sentry.io/2",
+      "csp": "https://o1.ingest.sentry.io/api/2/csp-report/?sentry_key=abc123publickey",
+      "security": "https://o1.ingest.sentry.io/api/2/security/?sentry_key=abc123publickey",
+      "minidump": "https://o1.ingest.sentry.io/api/2/minidump/?sentry_key=abc123publickey",
+      "cdn": "https://js.sentry-cdn.com/abc123publickey.min.js"
+    },
+    "isActive": true,
+    "dateCreated": "2018-11-06T21:20:07.941Z"
+  }
+]
+```
+
+### Response fields
+
+<ResponseField name="id" type="string">
+  The unique ID of the key.
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  The label for this key.
+</ResponseField>
+
+<ResponseField name="public" type="string">
+  The public portion of the key, included in the DSN.
+</ResponseField>
+
+<ResponseField name="dsn" type="object">
+  An object containing DSN variants for different integrations. The `public` DSN is used in most SDK configurations.
+</ResponseField>
+
+<ResponseField name="isActive" type="boolean">
+  Whether this key is active and accepting events.
+</ResponseField>
+
+---
+
+## Project statistics
+
+```
+GET /api/0/projects/{organization_id_or_slug}/{project_id_or_slug}/stats/
+```
+
+Returns a time-series breakdown of event volume for the project.
+
+**Required scope:** `project:read`
+
+### Query parameters
+
+<ParamField query="stat" type="string">
+  The type of stat to return. One of `received`, `rejected`, `blacklisted`, or `generated`. Defaults to `received`.
+</ParamField>
+
+<ParamField query="since" type="integer">
+  Unix timestamp for the start of the time range.
+</ParamField>
+
+<ParamField query="until" type="integer">
+  Unix timestamp for the end of the time range.
+</ParamField>
+
+<ParamField query="resolution" type="string">
+  The time resolution. One of `10s`, `1h`, or `1d`.
+</ParamField>
+
+### Example request
+
+```bash
+curl "https://sentry.io/api/0/projects/my-org/my-project/stats/?stat=received&resolution=1h" \
+  -H "Authorization: Bearer <token>"
+```
+
+### Example response
+
+```json
+[
+  [1541455200, 473],
+  [1541458800, 914],
+  [1541462400, 991]
+]
+```
+
+Each element is a `[unix_timestamp, count]` pair.

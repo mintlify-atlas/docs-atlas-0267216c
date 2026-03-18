@@ -1,0 +1,120 @@
+---
+title: GitHub
+description: Connect Sentry to GitHub to get suspect commits, stack trace linking, PR comments, code owners, and two-way issue sync.
+---
+
+The GitHub integration connects your Sentry organization to your GitHub organization or user account. It enriches Sentry issues with commit data, links issues to GitHub issues and pull requests, and surfaces Sentry errors directly on merged PRs.
+
+## Features
+
+<CardGroup cols={2}>
+  <Card title="Suspect commits" icon="git-commit">
+    Sentry identifies the commits most likely to have introduced an error and highlights them on the issue detail page.
+  </Card>
+  <Card title="Stack trace linking" icon="code">
+    Navigate from a stack frame directly to the corresponding line in your GitHub repository.
+  </Card>
+  <Card title="PR comments" icon="message-square">
+    When a pull request is merged, Sentry posts a comment listing the issues attributed to commits in that PR.
+  </Card>
+  <Card title="Code owners" icon="users">
+    Import your `CODEOWNERS` file to automatically assign Sentry issues to the team or person responsible for the affected code.
+  </Card>
+  <Card title="Issue linking" icon="link">
+    Create or link GitHub issues directly from a Sentry issue, and keep assignees and status in sync.
+  </Card>
+  <Card title="Auto-resolve" icon="check-circle">
+    Resolve Sentry issues automatically when the associated GitHub issue is closed.
+  </Card>
+</CardGroup>
+
+## Installation
+
+<Steps>
+  <Step title="Navigate to integrations">
+    In Sentry, go to **Settings > Integrations** and find **GitHub** in the Source Control group. Click **Install**.
+  </Step>
+  <Step title="Authorize with GitHub">
+    Sentry redirects you to GitHub to authorize the OAuth application. Sign in with the GitHub account that has owner access to the organization you want to connect.
+  </Step>
+  <Step title="Install the GitHub App">
+    After authorization, GitHub redirects you to install the Sentry GitHub App on your GitHub organization or user account. Select which repositories the app should have access to, then click **Install**.
+  </Step>
+  <Step title="Select repositories">
+    Back in Sentry, choose the repositories you want to link to your Sentry projects. Sentry uses these repositories to look up commits and source files.
+  </Step>
+</Steps>
+
+<Note>
+You must have **owner** privileges on the GitHub organization to install the GitHub App. If the integration already exists on another Sentry organization, uninstall it from GitHub first.
+</Note>
+
+## Stack trace linking
+
+Stack trace linking maps each stack frame to the corresponding line in your source repository. When Sentry displays a stack trace, it adds a link that opens the file at the correct line in GitHub.
+
+For linking to work, your project must have a repository connected and release commits tracked. Sentry resolves source paths by matching the stack frame filename against the file tree of the commits included in the release.
+
+## Code owners
+
+Sentry can import your `CODEOWNERS` file and use it to assign issues to the right team or person.
+
+Supported `CODEOWNERS` file locations:
+- `CODEOWNERS`
+- `.github/CODEOWNERS`
+- `docs/CODEOWNERS`
+
+<Steps>
+  <Step title="Go to your project settings">
+    In Sentry, navigate to **Settings > Projects > [your project] > Code Owners**.
+  </Step>
+  <Step title="Sync the CODEOWNERS file">
+    Click **Sync CODEOWNERS**. Sentry fetches the file from the default branch of the linked repository.
+  </Step>
+  <Step title="Map GitHub users to Sentry users">
+    Sentry prompts you to map GitHub user handles to Sentry members. This enables auto-assignment.
+  </Step>
+</Steps>
+
+<Tip>
+CODEOWNERS rules work alongside Sentry's existing ownership rules. If both match, Sentry merges the results.
+</Tip>
+
+## Issue linking
+
+You can link a Sentry issue to an existing GitHub issue or create a new one.
+
+1. Open a Sentry issue.
+2. In the **Linked Issues** section of the sidebar, click **Link a GitHub issue**.
+3. Search for an existing issue or fill in the form to create a new one.
+
+Once linked, Sentry displays the GitHub issue status and a direct link on the issue page.
+
+## Two-way issue sync
+
+The GitHub integration supports optional two-way sync of issue status and assignment.
+
+To configure sync, go to **Settings > Integrations > GitHub > Configure** and enable the options you want:
+
+| Option | Description |
+|---|---|
+| Sync GitHub status to Sentry | Closing a GitHub issue resolves its linked Sentry issue; reopening it unresolves the Sentry issue. |
+| Sync GitHub assignment to Sentry | Assigning an issue in GitHub assigns the linked Sentry issue to the same user. |
+| Sync Sentry assignment to GitHub | Assigning an issue in Sentry assigns the linked GitHub issue to the same user. |
+| Sync Sentry comments to GitHub | Comments posted on a Sentry issue are mirrored to the linked GitHub issue. |
+| Sync Sentry status to GitHub | Configure which GitHub issue state to set when a Sentry issue is resolved or unresolved, per repository. |
+
+## PR comments
+
+When a pull request is merged, Sentry posts a comment on the PR listing all Sentry issues attributed to commits in that PR. This helps your team catch regressions at merge time.
+
+To enable or disable PR comments for your organization, go to **Settings > Integrations > GitHub > Configure** and toggle **Enable Comments on Pull Requests**.
+
+## Alert rule actions
+
+With the GitHub integration installed, you can add a **Create a GitHub issue** action to your issue alert rules. When the alert fires, Sentry automatically opens a new GitHub issue.
+
+To configure this:
+1. Go to **Alerts > Alert Rules** and create or edit a rule.
+2. Under **Then perform these actions**, click **Add action** and select **GitHub**.
+3. Choose the repository and configure the issue fields.

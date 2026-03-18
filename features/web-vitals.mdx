@@ -1,0 +1,89 @@
+---
+title: Web Vitals
+description: Measure and improve user-perceived performance with Core Web Vitals tracking in Sentry.
+---
+
+Core Web Vitals are standardized performance metrics defined by Google that measure real user experience on web pages. Sentry's JavaScript SDK captures these metrics automatically for browser-based applications.
+
+## Core Web Vitals
+
+<CardGroup cols={2}>
+  <Card title="LCP — Largest Contentful Paint" icon="image">
+    Measures loading performance. Time from navigation start until the largest image or text block in the viewport is rendered. **Good: ≤ 2.5 s**
+  </Card>
+  <Card title="INP — Interaction to Next Paint" icon="hand-pointer">
+    Measures interactivity. Latency from user interaction (click, tap, keypress) to the next frame paint. **Good: ≤ 200 ms**
+  </Card>
+  <Card title="CLS — Cumulative Layout Shift" icon="object-ungroup">
+    Measures visual stability. Cumulative score of unexpected layout shifts during the page lifetime. **Good: ≤ 0.1**
+  </Card>
+  <Card title="TTFB — Time to First Byte" icon="server">
+    Time from request start to the first byte of the response. Indicates server and network latency. **Good: ≤ 800 ms**
+  </Card>
+  <Card title="FCP — First Contentful Paint" icon="paintbrush">
+    Time from navigation start until any content (text, image, canvas) is first rendered. **Good: ≤ 1.8 s**
+  </Card>
+  <Card title="FID — First Input Delay" icon="clock">
+    (Legacy) Delay between first user interaction and the browser's response. Replaced by INP in modern browsers.
+  </Card>
+</CardGroup>
+
+## How Sentry collects Web Vitals
+
+The Sentry JavaScript SDK uses the browser's [Performance Observer API](https://developer.mozilla.org/en-US/docs/Web/API/PerformanceObserver) and the `web-vitals` library to collect metric values during pageloads and navigations. These are attached as measurements on the page-load transaction:
+
+```javascript
+import * as Sentry from "@sentry/browser";
+
+Sentry.init({
+  dsn: "...",
+  integrations: [
+    Sentry.browserTracingIntegration(), // enables Web Vitals collection
+  ],
+  tracesSampleRate: 1.0,
+});
+```
+
+No additional configuration is required. As long as `browserTracingIntegration` is enabled, Web Vitals are captured automatically.
+
+## Scoring
+
+Sentry categorizes each Web Vital score into three buckets:
+
+| Category | Description |
+|---|---|
+| **Good** | Within the recommended threshold; no action needed |
+| **Needs improvement** | Between good and poor thresholds; worth investigating |
+| **Poor** | Exceeds the poor threshold; high user impact |
+
+Sentry computes a weighted **Performance Score** (0–100) for each pageload by combining the individual vitals. LCP and INP carry the most weight.
+
+## Web Vitals in the Sentry UI
+
+### Performance overview
+
+The **Web Vitals** tab in Performance shows aggregate p75 values for all vitals across your frontend transactions, along with trend charts and a score histogram.
+
+### Filtering by page or route
+
+Use the transaction filter to see vitals for a specific page or route:
+
+- Filter by `transaction:/checkout` to see vitals only for that page
+- Break down by `browser`, `os`, or any custom tag
+- Compare environments (production vs. staging)
+
+### Historical charts
+
+For each vital, Sentry shows a time-series chart of the p75 value over the selected time range. This lets you correlate performance regressions with deploys.
+
+## Opportunities view
+
+The **Opportunities** section ranks your pages by their potential performance improvement impact. It highlights:
+
+- Pages with the most poor LCP or CLS scores
+- Pages visited by the most users (so improvements have the widest reach)
+- Estimated performance score improvement if the vital is fixed
+
+<Tip>
+Sort the Opportunities view by **score improvement** × **page views** to find the highest-leverage optimizations. A page with a poor score but low traffic is less impactful than a slightly degraded page with millions of visits.
+</Tip>

@@ -1,0 +1,84 @@
+---
+title: Dashboards
+description: Build custom dashboards with multiple widgets to monitor your most important metrics at a glance.
+---
+
+Dashboards let you create a personalized view of your Sentry data by arranging multiple widgets on a single page. Each widget runs a query against your error and performance data and displays the results as a chart, table, or big number.
+
+## Widget types
+
+<CardGroup cols={3}>
+  <Card title="Line chart" icon="chart-line">
+    Show metric trends over time. Best for comparing multiple series such as error rate by project.
+  </Card>
+  <Card title="Area chart" icon="chart-area">
+    Like a line chart but with filled areas. Good for visualizing volume over time.
+  </Card>
+  <Card title="Bar chart" icon="chart-bar">
+    Discrete bars per time bucket. Useful for comparing event counts in fixed windows.
+  </Card>
+  <Card title="Table" icon="table">
+    Tabular results with sortable columns. Best for top-N lists such as slowest transactions.
+  </Card>
+  <Card title="Big number" icon="hashtag">
+    A single large metric value with optional comparison to a previous period. Good for KPIs on a status board.
+  </Card>
+  <Card title="Top N" icon="list-ol">
+    A horizontal bar chart showing the top values for a dimension. Useful for "top error types" or "top affected users".
+  </Card>
+</CardGroup>
+
+## Dashboard queries
+
+Every widget is powered by the **Discover** query engine. When building a widget you specify:
+
+- **Dataset** — errors, transactions, spans, or session health
+- **Visualization** — the chart type
+- **Y-axis** — the metric to plot (for example, `count()`, `p95(transaction.duration)`, `count_unique(user)`)
+- **Filter** — a search query to narrow the data (for example, `transaction:/api/checkout environment:production`)
+- **Group by** — an optional field to split the metric into series (for example, `project`, `browser`)
+- **Sort and limit** (for tables) — column to sort by and maximum number of rows
+
+## Creating a dashboard
+
+<Steps>
+  <Step title="Open Dashboards">
+    Navigate to **Dashboards** in the Sentry sidebar.
+  </Step>
+  <Step title="Create dashboard">
+    Click **Create Dashboard** and give it a name.
+  </Step>
+  <Step title="Add a widget">
+    Click **Add Widget**, choose a visualization type, configure the query, and save the widget.
+  </Step>
+  <Step title="Arrange widgets">
+    Drag and resize widgets on the canvas to create your ideal layout.
+  </Step>
+  <Step title="Save">
+    Click **Save and Finish** to persist the dashboard.
+  </Step>
+</Steps>
+
+## Dashboard templates
+
+Sentry ships several prebuilt **Insights** dashboards covering common monitoring scenarios:
+
+- **Frontend** — Web Vitals, page load times, JS errors
+- **Backend** — API latency, database query performance, error rates
+- **Mobile** — app start times, screen loads, crash rates
+- **Caches** — cache hit/miss rates and latency
+- **Queues** — job processing time, failure rates, queue depth
+- **LLM Monitoring** — token usage, model latency, error rates
+
+You can use a template as-is or clone it and customize the widgets.
+
+## Sharing and permissions
+
+- **Organization dashboards** are visible to all members of your organization.
+- **My dashboards** are private to your account by default.
+- Any member with at least project-member permissions can create dashboards.
+- Dashboards can be shared via a direct URL.
+
+<Tip>
+Use dashboard **filters** (the filter bar at the top of the dashboard) to apply a project, environment, or time range to all widgets at once without editing each widget individually.
+</Tip>

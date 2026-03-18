@@ -1,0 +1,161 @@
+---
+title: Events
+description: Retrieve raw event data for projects and organizations using the Sentry API.
+---
+
+Event endpoints give you access to individual raw events — the underlying data captured by the Sentry SDK before it is aggregated into an issue.
+
+## Retrieve a project event
+
+```
+GET /api/0/projects/{organization_id_or_slug}/{project_id_or_slug}/events/{event_id}/
+```
+
+Returns the full details for a single event, including stack trace, breadcrumbs, context, and tags.
+
+**Required scope:** `project:read`
+
+### Path parameters
+
+<ParamField path="organization_id_or_slug" type="string" required>
+  The ID or slug of the organization.
+</ParamField>
+
+<ParamField path="project_id_or_slug" type="string" required>
+  The ID or slug of the project.
+</ParamField>
+
+<ParamField path="event_id" type="string" required>
+  The hexadecimal event ID as reported by the SDK (e.g. `9999aaaaca8b46d797c23c6077c6ff01`).
+</ParamField>
+
+### Example request
+
+```bash
+curl https://sentry.io/api/0/projects/my-org/pump-station/events/9999aaaaca8b46d797c23c6077c6ff01/ \
+  -H "Authorization: Bearer <token>"
+```
+
+### Example response
+
+```json
+{
+  "eventID": "9999aaaaca8b46d797c23c6077c6ff01",
+  "id": "9999aaafcc8b46d797c23c6077c6ff01",
+  "groupID": "1341191803",
+  "title": "This is an example Python exception",
+  "message": "",
+  "platform": "javascript",
+  "type": "error",
+  "dateCreated": "2020-06-17T22:26:56.098086Z",
+  "dateReceived": "2020-06-17T22:26:56.428721Z",
+  "tags": [
+    { "key": "browser", "value": "Chrome 83.0.4103" },
+    { "key": "environment", "value": "prod" },
+    { "key": "level", "value": "error" }
+  ],
+  "user": {
+    "id": "550747",
+    "name": "Hell Boy",
+    "email": "hell@boy.cat",
+    "ip_address": "192.168.1.1"
+  },
+  "contexts": {
+    "browser": { "name": "Chrome", "version": "83.0.4103", "type": "browser" },
+    "os": { "name": "Windows", "version": "10", "type": "os" },
+    "trace": {
+      "trace_id": "da6caabcd90e45fdb81f6655824a5f88",
+      "span_id": "83db1ad17e67dfe7",
+      "op": "navigation",
+      "type": "trace"
+    }
+  },
+  "entries": [
+    {
+      "type": "exception",
+      "data": { "values": [] }
+    },
+    {
+      "type": "breadcrumbs",
+      "data": { "values": [] }
+    },
+    {
+      "type": "request",
+      "data": {
+        "url": "https://sentry.io/organizations/my-org/issues/",
+        "method": "GET"
+      }
+    }
+  ],
+  "sdk": {
+    "name": "sentry.javascript.browser",
+    "version": "5.17.0"
+  },
+  "release": {
+    "version": "b65bc521378269d3eaefdc964f8ef56621414943",
+    "shortVersion": "b65bc521"
+  }
+}
+```
+
+### Response fields
+
+<ResponseField name="eventID" type="string">
+  The unique hexadecimal ID of the event as reported by the SDK.
+</ResponseField>
+
+<ResponseField name="id" type="string">
+  The internal Sentry ID for the event.
+</ResponseField>
+
+<ResponseField name="groupID" type="string">
+  The ID of the issue this event belongs to.
+</ResponseField>
+
+<ResponseField name="title" type="string">
+  The event title.
+</ResponseField>
+
+<ResponseField name="platform" type="string">
+  The platform that generated the event (e.g. `javascript`, `python`).
+</ResponseField>
+
+<ResponseField name="type" type="string">
+  The event type. One of `error`, `transaction`, `csp`, `hpkp`, `expectct`, `expectstaple`, `default`.
+</ResponseField>
+
+<ResponseField name="dateCreated" type="string">
+  ISO 8601 timestamp of when the event was created on the client.
+</ResponseField>
+
+<ResponseField name="dateReceived" type="string">
+  ISO 8601 timestamp of when Sentry received the event.
+</ResponseField>
+
+<ResponseField name="tags" type="array">
+  A list of `{key, value}` tag objects attached to the event.
+</ResponseField>
+
+<ResponseField name="user" type="object | null">
+  The user context associated with the event.
+</ResponseField>
+
+<ResponseField name="contexts" type="object">
+  Additional context objects such as `browser`, `os`, `trace`, and `device`.
+</ResponseField>
+
+<ResponseField name="entries" type="array">
+  A list of structured event entries. Types include `exception`, `breadcrumbs`, `request`, `message`, and `threads`.
+</ResponseField>
+
+<ResponseField name="sdk" type="object">
+  Information about the Sentry SDK that captured the event.
+</ResponseField>
+
+<ResponseField name="release" type="object | null">
+  The release associated with this event, if any.
+</ResponseField>
+
+## Org-level event query
+
+For querying events with Discover-style filters and field selection across an organization, see [Events queries](/api/events/queries).

@@ -1,0 +1,125 @@
+---
+title: Organizations
+description: An organization is the top-level container for teams, projects, and settings in Sentry.
+---
+
+Every Sentry account belongs to at least one **organization**. An organization owns all of your projects, teams, members, integrations, and billing. From the source model:
+
+```python
+# src/sentry/models/organization.py
+class Organization(ReplicatedCellModel):
+    """
+    An organization represents a group of individuals which maintain ownership of projects.
+    """
+    name = models.CharField(max_length=64)
+    slug = SentryOrgSlugField(unique=True)
+    status = BoundedPositiveIntegerField(
+        choices=OrganizationStatus.as_choices(),
+        default=OrganizationStatus.ACTIVE.value,
+    )
+    date_added = models.DateTimeField(default=timezone.now)
+    default_role = models.CharField(max_length=32, default=str(roles.get_default().id))
+```
+
+## Organization slug
+
+Each organization has a unique **slug** that appears in Sentry URLs and in API paths:
+
+```
+https://sentry.io/organizations/<org_slug>/
+/api/0/organizations/<org_slug>/projects/
+```
+
+The slug is derived from the organization name but can be changed in **Organization Settings → General Settings**.
+
+## Members and roles
+
+Users join an organization through `OrganizationMember`. Each member is assigned a role that determines their permissions across the entire organization.
+
+```python
+# src/sentry/models/organizationmember.py
+class OrganizationMember(ReplicatedCellModel):
+    organization = FlexibleForeignKey("sentry.Organization")
+    user_id = HybridCloudForeignKey("sentry.User", ...)
+    role = models.CharField(max_length=32, default=str(roles.get_default().id))
+```
+
+Built-in organization roles (from lowest to highest privilege):
+
+| Role | Description |
+|---|---|
+| **Member** | Can view and interact with issues in projects they have access to. |
+| **Admin** | Can manage team membership and project settings. |
+| **Manager** | Can manage members, teams, and most organization settings. |
+| **Owner** | Full access including billing, SSO configuration, and organization deletion. |
+
+## Teams
+
+Teams group members and control which projects they can access. A user gains access to a project by being a member of a team that is assigned to that project.
+
+```python
+# src/sentry/models/team.py
+class Team(ReplicatedCellModel):
+    """
+    A team represents a group of individuals which maintain ownership of projects.
+    """
+    organization = FlexibleForeignKey("sentry.Organization")
+    slug = SentrySlugField()
+    name = models.CharField(max_length=64)
+```
+
+Teams are unique within an organization by slug. A member can belong to multiple teams, and a project can be assigned to multiple teams.
+
+## Organization flags
+
+Several organization-wide behaviors are controlled by boolean flags on the `Organization` model:
+
+```python
+# src/sentry/models/organization.py
+class flags(TypedClassBitField):
+    allow_joinleave: bool        # Members can join/leave teams without approval
+    enhanced_privacy: bool       # Limit PII in notifications and source code display
+    disable_shared_issues: bool  # Disable public sharing of issue details
+    early_adopter: bool          # Access features before public release
+    require_2fa: bool            # Enforce 2FA for all members
+    disable_member_project_creation: bool  # Prevent members from creating projects
+    disable_member_invite: bool  # Prevent members from inviting others
+```
+
+These can be toggled from **Organization Settings → Security & Privacy** or **Organization Settings → General Settings**.
+
+## Organization settings
+
+| Section | What you can configure |
+|---|---|
+| **General** | Organization name, slug, and default member role |
+| **Members** | Invite members, manage roles, enforce 2FA |
+| **Teams** | Create teams, add members, assign projects |
+| **Security & Privacy** | SSO (SAML, Google Workspace), enhanced privacy, IP allow lists |
+| **Integrations** | GitHub, GitLab, Slack, PagerDuty, and many more |
+| **Data retention** | Event retention period (plan-dependent) |
+| **Auth tokens** | Organization-level API tokens for CI/CD pipelines |
+
+## Multi-organization support
+
+A single Sentry user can be a member of multiple organizations. Switching organizations is done through the organization selector in the top-left corner of the UI.
+
+In **self-hosted** installations with `SENTRY_SINGLE_ORGANIZATION = True`, organization switching is hidden and all users belong to a single organization. Set this to `False` in `sentry.conf.py` to enable multi-organization mode.
+
+## Inviting members
+
+<Steps>
+  <Step title="Open Members settings">
+    Go to **Organization Settings → Members**.
+  </Step>
+  <Step title="Click Invite Members">
+    Enter one or more email addresses and select the role to assign.
+  </Step>
+  <Step title="Send the invitation">
+    The invitee receives an email with a link that is valid for 30 days. Once they accept, they are added as an `OrganizationMember`.
+  </Step>
+</Steps>
+
+<Note>
+  If `disable_member_invite` is enabled on the organization, only managers and owners can send invitations.
+</Note>

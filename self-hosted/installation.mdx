@@ -1,0 +1,128 @@
+---
+title: Installation
+description: Install and run Sentry on your own infrastructure using Docker Compose.
+---
+
+Self-hosted Sentry runs on Docker Compose. The application code lives in [getsentry/sentry](https://github.com/getsentry/sentry), but deployment is managed through the [getsentry/self-hosted](https://github.com/getsentry/self-hosted) repository, which bundles everything you need to run Sentry on your own infrastructure.
+
+## System requirements
+
+Before you begin, make sure your host meets the minimum requirements:
+
+| Resource | Minimum |
+| --- | --- |
+| CPU | 4 cores |
+| RAM | 16 GB |
+| Disk | 20 GB |
+
+## Prerequisites
+
+You need the following software installed on your host:
+
+- **Docker** 19.03 or later
+- **Docker Compose** 1.28 or later
+- **Git**
+
+Verify your versions:
+
+```bash
+docker --version
+docker compose version
+git --version
+```
+
+## Installation steps
+
+<Steps>
+  <Step title="Clone the self-hosted repository">
+    Clone the [getsentry/self-hosted](https://github.com/getsentry/self-hosted) repository. This is a separate repo from the main application code and contains the Docker Compose configuration for running Sentry.
+
+    ```bash
+    git clone https://github.com/getsentry/self-hosted.git
+    cd self-hosted
+    ```
+  </Step>
+
+  <Step title="Run the install script">
+    Run the install script. This pulls the required Docker images, runs database migrations, and creates the initial configuration files.
+
+    ```bash
+    ./install.sh
+    ```
+
+    The script will prompt you to create an initial admin user during setup. If you skip this step, you can create one manually later.
+
+    <Note>
+      The install script can take several minutes to complete on first run, as it needs to download and initialize all service containers.
+    </Note>
+  </Step>
+
+  <Step title="Start Sentry">
+    Once installation is complete, start all services:
+
+    ```bash
+    docker compose up -d
+    ```
+  </Step>
+
+  <Step title="Access the web interface">
+    Open your browser and navigate to:
+
+    ```
+    http://localhost:9000
+    ```
+
+    Sentry's web interface is served on port 9000 by default.
+  </Step>
+</Steps>
+
+## Create an admin user
+
+If you didn't create an admin user during installation, run this command:
+
+```bash
+docker compose run --rm web createuser
+```
+
+You'll be prompted for an email address, password, and whether the user should be a superuser. For your initial admin account, answer **yes** to the superuser prompt.
+
+You can also create a user non-interactively:
+
+```bash
+docker compose run --rm web createuser \
+  --email admin@example.com \
+  --password yourpassword \
+  --superuser
+```
+
+## Environment variables
+
+After installation, a `.env` file is created in the `self-hosted` directory. This file controls key settings for your Sentry instance. The most important variables are:
+
+```bash
+# Required: session signing key — regenerate with `generate-secret-key`
+SENTRY_SECRET_KEY=your-secret-key-here
+
+# The public URL of your Sentry instance
+SENTRY_URL_PREFIX=http://sentry.example.com
+```
+
+<Warning>
+  Never use the default `SENTRY_SECRET_KEY` in production. If this key is compromised, all active sessions are invalidated and you must regenerate it.
+</Warning>
+
+## Port mapping
+
+By default, the following ports are exposed on your host:
+
+| Port | Service |
+| --- | --- |
+| 9000 | Sentry web interface |
+
+To change the port, edit the `docker-compose.yml` file in the `self-hosted` directory.
+
+## Next steps
+
+- [Configure your instance](/self-hosted/configuration) — set up email, file storage, and external services
+- [Set up backups](/self-hosted/backup) — protect your data
+- [Monitor your instance](/self-hosted/monitoring) — keep an eye on service health

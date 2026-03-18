@@ -1,0 +1,89 @@
+---
+title: Uptime monitoring
+description: Monitor HTTP endpoints from multiple regions and get alerted when your service becomes unavailable.
+---
+
+Sentry Uptime monitoring continuously checks your HTTP and HTTPS endpoints from Sentry-managed infrastructure and creates issues when your service is unreachable or returns unexpected responses.
+
+## How uptime monitoring works
+
+When you configure an uptime monitor, Sentry provisions a **subscription** that schedules periodic checks from one or more regions. Each check:
+
+1. Sends an HTTP request to your configured URL using the specified method, headers, and body.
+2. Waits up to the configured timeout for a response.
+3. Evaluates the response against your configured assertions (for example, status code must be `200`).
+4. Records the result and triggers an incident if the check fails.
+
+## Check configuration
+
+| Setting | Options | Description |
+|---|---|---|
+| **URL** | Any HTTP/HTTPS URL | The endpoint to check |
+| **Method** | GET, POST, HEAD, PUT, DELETE, PATCH, OPTIONS | HTTP method to use |
+| **Interval** | 1 min, 5 min, 10 min, 20 min, 30 min, 1 hour | How often to run the check |
+| **Timeout** | 1–60 seconds | How long to wait for a response |
+| **Headers** | Key-value pairs | Custom HTTP headers (for example, `Authorization`) |
+| **Body** | String | Request body for POST/PUT requests |
+
+## Assertions
+
+You can configure assertions that the checker evaluates against the HTTP response. If any assertion fails, the check is considered a failure even if the request succeeded:
+
+- **Status code** equals an expected value (for example, `200`)
+- **Response body** contains a specific string
+- **Response time** is below a threshold
+
+## Regions
+
+Sentry runs checks from multiple geographic regions to distinguish between global outages and regional network issues. A monitor can have regions in these modes:
+
+| Mode | Description |
+|---|---|
+| `active` | Region is running checks normally |
+| `inactive` | Region is disabled; no checks are run |
+| `shadow` | Region runs checks but results are ignored (used for testing new regions) |
+
+## Monitor statuses
+
+| Status | Description |
+|---|---|
+| `ok` | All checks from all active regions are passing |
+| `failed` | One or more checks have failed; an incident is open |
+
+## Incidents and issues
+
+When an uptime check fails, Sentry creates an **uptime issue** that follows the standard issue lifecycle:
+
+- The issue is created when the first failure is detected.
+- Each subsequent failed check adds a new event to the issue.
+- The issue is automatically resolved when a check passes.
+
+The issue detail page shows the response body and headers captured at the time of failure (when response capture is enabled), making it easier to understand why the endpoint is failing.
+
+## Response capture
+
+When an uptime check fails, Sentry can capture the HTTP response body and headers to help you debug the failure. This is controlled by the `response_capture_enabled` setting on the monitor. Response capture is automatically disabled after the first capture to reduce bandwidth, and re-enabled when the monitor recovers.
+
+## Uptime alert rules
+
+You can attach notification rules to uptime monitors to control how incidents are routed:
+
+<Steps>
+  <Step title="Open the monitor">
+    Navigate to **Crons &amp; Uptime → Uptime** and open the monitor you want to configure.
+  </Step>
+  <Step title="Edit alert rules">
+    Click **Edit** and configure the notification actions for this monitor.
+  </Step>
+  <Step title="Add actions">
+    Add email, Slack, PagerDuty, or other notification targets that should be contacted when the monitor fails.
+  </Step>
+</Steps>
+
+## Auto-detection
+
+Sentry can automatically detect URLs to monitor based on your frontend transaction data. When Sentry observes that your application regularly navigates to an external URL, it can suggest or automatically create an uptime monitor for that endpoint. Auto-detected monitors are created in `AUTO_DETECTED_ONBOARDING` mode and transition to `AUTO_DETECTED_ACTIVE` once confirmed.
+
+<Note>
+Uptime checks originate from Sentry's infrastructure, not from within your network. Your endpoint must be publicly accessible from the internet. If your service requires authentication, use the **Headers** setting to include an `Authorization` header.
+</Note>

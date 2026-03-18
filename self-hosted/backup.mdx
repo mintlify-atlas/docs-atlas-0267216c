@@ -1,0 +1,174 @@
+---
+title: Backup
+description: Back up and restore your self-hosted Sentry instance.
+---
+
+A self-hosted Sentry installation has three main data stores to consider:
+
+| Data | Store | Priority |
+| --- | --- | --- |
+| Issues, events, users, projects, settings | PostgreSQL | Critical |
+| Attachments, debug symbols, release artifacts | File storage | Important |
+| Cache, queues | Redis | Optional |
+
+PostgreSQL contains the source of truth for all your Sentry data. Back it up regularly.
+
+## PostgreSQL backup
+
+### Back up all databases
+
+Use `pg_dumpall` to produce a complete backup of all databases:
+
+```bash
+docker compose exec postgres pg_dumpall -U postgres > sentry-backup-$(date +%Y%m%d).sql
+```
+
+### Back up a single database
+
+To back up only the Sentry database:
+
+```bash
+docker compose exec postgres pg_dump -U postgres postgres > sentry-db-$(date +%Y%m%d).sql
+```
+
+### Backup frequency recommendations
+
+- **Daily backups** at minimum for production instances
+- **Before every upgrade** — required, not optional
+- **Weekly full backups** with daily incrementals for larger installs
+
+Retain backups for at least 30 days. Store them off-host (for example, in S3 or another storage service).
+
+## File storage backup
+
+What you need to back up depends on which file storage backend you're using.
+
+<Tabs>
+  <Tab title="Local filesystem (default)">
+    File uploads are stored in the `/data` volume inside the container, which maps to a Docker volume named `sentry-data` by default.
+
+    To back up the data directory, copy the volume contents to a safe location:
+
+    ```bash
+    # Find the volume path
+    docker volume inspect sentry_sentry-data
+
+    # Copy the contents
+    tar -czf sentry-files-$(date +%Y%m%d).tar.gz /var/lib/docker/volumes/sentry_sentry-data/_data
+    ```
+
+    Back up this directory on the same schedule as your PostgreSQL database.
+  </Tab>
+  <Tab title="S3-compatible storage">
+    When using S3-compatible storage, the storage provider handles data durability and replication. You do not need to back up the file store separately.
+
+    Enable versioning on your S3 bucket to protect against accidental deletion.
+  </Tab>
+</Tabs>
+
+## Redis backup (optional)
+
+Redis stores ephemeral data: caches, rate limit counters, and task queues. Most of this data is safe to lose — it will be rebuilt automatically when services restart.
+
+Redis backup is optional and generally not required for most self-hosted installations. If you have very high event volume and want to avoid losing in-flight events during a failure, you can enable Redis persistence (AOF or RDB) in your Redis configuration.
+
+## Example backup script
+
+Save this script as `/opt/sentry-backup.sh` and schedule it with cron:
+
+```bash
+#!/bin/bash
+
+set -euo pipefail
+
+BACKUP_DIR="/opt/sentry-backups"
+DATE=$(date +%Y%m%d-%H%M%S)
+SELF_HOSTED_DIR="/opt/self-hosted"
+
+mkdir -p "$BACKUP_DIR"
+
+echo "Starting Sentry backup at $DATE"
+
+# PostgreSQL backup
+echo "Backing up PostgreSQL..."
+docker compose -f "$SELF_HOSTED_DIR/docker-compose.yml" exec -T postgres \
+  pg_dumpall -U postgres > "$BACKUP_DIR/postgres-$DATE.sql"
+
+# Compress the SQL dump
+gzip "$BACKUP_DIR/postgres-$DATE.sql"
+
+# Remove backups older than 30 days
+find "$BACKUP_DIR" -name "postgres-*.sql.gz" -mtime +30 -delete
+
+echo "Backup complete: $BACKUP_DIR/postgres-$DATE.sql.gz"
+```
+
+Make the script executable and schedule it:
+
+```bash
+chmod +x /opt/sentry-backup.sh
+
+# Run daily at 2 AM
+echo "0 2 * * * root /opt/sentry-backup.sh" >> /etc/cron.d/sentry-backup
+```
+
+## Restore procedure
+
+<Steps>
+  <Step title="Stop all services">
+    ```bash
+    docker compose down
+    ```
+  </Step>
+
+  <Step title="Start only the database">
+    ```bash
+    docker compose up -d postgres
+    ```
+  </Step>
+
+  <Step title="Drop and recreate the database">
+    ```bash
+    docker compose exec postgres psql -U postgres -c "DROP DATABASE IF EXISTS postgres;"
+    docker compose exec postgres psql -U postgres -c "CREATE DATABASE postgres;"
+    ```
+  </Step>
+
+  <Step title="Restore from backup">
+    ```bash
+    # If restoring a pg_dumpall backup
+    cat sentry-backup.sql | docker compose exec -T postgres psql -U postgres
+
+    # Or if the file is gzipped
+    gunzip -c sentry-backup.sql.gz | docker compose exec -T postgres psql -U postgres
+    ```
+  </Step>
+
+  <Step title="Restore file storage (if using local filesystem)">
+    If you backed up the file data volume, restore it:
+
+    ```bash
+    tar -xzf sentry-files.tar.gz -C /var/lib/docker/volumes/sentry_sentry-data/_data
+    ```
+  </Step>
+
+  <Step title="Start all services">
+    ```bash
+    docker compose up -d
+    ```
+  </Step>
+</Steps>
+
+## Sentry's built-in export command
+
+Sentry also provides a built-in export/import command for portability. This exports Sentry-level data (users, organizations, projects, settings) as JSON, independent of the underlying database format:
+
+```bash
+# Export all data
+docker compose run --rm web export global /tmp/sentry-export.json
+
+# Import into another instance
+docker compose run --rm web import global /tmp/sentry-export.json
+```
+
+This is useful for migrating between instances, but it's not a substitute for regular PostgreSQL backups — it does not export raw event data stored in ClickHouse.

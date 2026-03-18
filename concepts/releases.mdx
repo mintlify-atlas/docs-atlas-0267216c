@@ -1,0 +1,156 @@
+---
+title: Releases
+description: Releases let Sentry track deployed versions, associate commits, and monitor release health.
+---
+
+A **release** is a version of your code deployed to an environment. Telling Sentry about your releases unlocks several features: suspect commits, source map association, release health monitoring, and regression detection.
+
+## What a release contains
+
+From the source model:
+
+```python
+# src/sentry/models/release.py
+class Release(Model):
+    """
+    A release is generally created when a new version is pushed into a
+    production state.
+    """
+    organization = FlexibleForeignKey("sentry.Organization")
+    projects = models.ManyToManyField("sentry.Project", through=ReleaseProject)
+    version = models.CharField(max_length=DB_VERSION_LENGTH)
+    ref = models.CharField(max_length=DB_VERSION_LENGTH, null=True)  # branch name
+    url = models.URLField(null=True)
+    date_added = models.DateTimeField(default=timezone.now)
+    date_released = models.DateTimeField(null=True)
+    commit_count = BoundedPositiveIntegerField(null=True, default=0)
+    authors = ArrayField(models.TextField(), default=list, null=True)
+    total_deploys = BoundedPositiveIntegerField(null=True, default=0)
+```
+
+A release belongs to one organization and can span multiple projects. The `version` field is any string you choose — a git SHA, a semantic version tag, or a build number.
+
+## Tagging events with a release
+
+Set the `release` option in the SDK to attach events to a release:
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    import sentry_sdk
+
+    sentry_sdk.init(
+        dsn="https://<public_key>@o<org_id>.ingest.sentry.io/<project_id>",
+        release="my-app@1.2.3",
+        environment="production",
+    )
+    ```
+  </Tab>
+  <Tab title="JavaScript / Node.js">
+    ```javascript
+    Sentry.init({
+      dsn: "https://<public_key>@o<org_id>.ingest.sentry.io/<project_id>",
+      release: "my-app@1.2.3",
+      environment: "production",
+    });
+    ```
+  </Tab>
+</Tabs>
+
+Use the format `<package>@<version>` for semantic versioning. Sentry parses semver-formatted versions and stores `major`, `minor`, `patch`, `revision`, and `prerelease` columns for filtering and comparison.
+
+## Creating a release
+
+You must explicitly create a release in Sentry before or shortly after deploying. There are three ways to do this:
+
+### sentry-cli
+
+```bash
+# Install the CLI
+npm install -g @sentry/cli
+# or: pip install sentry-cli
+
+# Create the release and associate commits from the current git repo
+sentry-cli releases new my-app@1.2.3
+sentry-cli releases set-commits my-app@1.2.3 --auto
+
+# Notify Sentry that the release was deployed
+sentry-cli releases deploys my-app@1.2.3 new --env production
+
+# Finalize the release
+sentry-cli releases finalize my-app@1.2.3
+```
+
+### API
+
+```bash
+curl https://sentry.io/api/0/organizations/<org_slug>/releases/ \
+  -H 'Authorization: Bearer <auth_token>' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "version": "my-app@1.2.3",
+    "refs": [{
+      "repository": "my-org/my-repo",
+      "commit": "a1b2c3d4"
+    }],
+    "projects": ["my-project"]
+  }'
+```
+
+### CI/CD integration
+
+Sentry provides official GitHub Actions and GitLab CI integrations. Example using GitHub Actions:
+
+```yaml
+# .github/workflows/release.yml
+- name: Create Sentry release
+  uses: getsentry/action-release@v1
+  env:
+    SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+    SENTRY_ORG: my-org
+    SENTRY_PROJECT: my-project
+  with:
+    environment: production
+    version: ${{ github.sha }}
+```
+
+## Release health
+
+Release health tracks crash-free rates and adoption across your user base. Sentry calculates:
+
+- **Crash-free session rate** — the percentage of sessions that did not end in a crash
+- **Crash-free user rate** — the percentage of users who did not experience a crash
+- **Adoption** — the percentage of your user base running each release version
+
+Release health requires the SDK to send **session data**. Most SDKs enable this automatically when you initialize with a `release` and `environment`.
+
+## Suspect commits
+
+When an issue is first seen in a release that has associated commits, Sentry uses blame information to identify the commit most likely responsible for the regression. This appears on the issue detail page under **Suspect Commits**.
+
+To enable suspect commits:
+
+1. Connect a source code integration (GitHub, GitLab, Bitbucket) in **Organization Settings → Integrations**.
+2. Associate commits when creating releases using `sentry-cli releases set-commits` or the `refs` field in the API.
+
+## Source maps
+
+For JavaScript projects, upload source maps when creating a release so that Sentry can display original (un-minified) stack frames:
+
+```bash
+sentry-cli releases files my-app@1.2.3 upload-sourcemaps ./dist \
+  --url-prefix '~/static/js'
+```
+
+## Release status
+
+Releases have an `open` or `archived` status:
+
+```python
+# src/sentry/models/release.py
+class ReleaseStatus:
+    OPEN = 0
+    ARCHIVED = 1
+```
+
+Archiving a release hides it from release lists and health dashboards without deleting associated events. You can archive releases from the **Releases** page in the UI or via the API.

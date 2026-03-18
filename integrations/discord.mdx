@@ -1,0 +1,99 @@
+---
+title: Discord
+description: Send Sentry alert notifications to Discord channels and interact with issues directly from Discord messages.
+---
+
+The Discord integration connects your Sentry organization to a Discord server. It posts alert notifications to channels, supports interactive message actions, and allows you to link your Discord identity to your Sentry account.
+
+## Features
+
+<CardGroup cols={2}>
+  <Card title="Alert notifications" icon="bell">
+    Route Sentry alerts to any Discord channel based on alert rule conditions.
+  </Card>
+  <Card title="Interactive messages" icon="mouse-pointer-click">
+    Assign, ignore, and resolve Sentry issues directly from Discord messages.
+  </Card>
+  <Card title="Slash commands" icon="terminal">
+    Use `/link`, `/unlink`, and `/help` commands to manage your Sentry identity from Discord.
+  </Card>
+</CardGroup>
+
+## Bot permissions
+
+The Sentry Discord bot requires the following permissions to function correctly:
+
+| Permission | Purpose |
+|---|---|
+| View Channels | Read channel information to post messages. |
+| Send Messages | Post alert notifications and replies. |
+| Embed Links | Render rich embed cards for Sentry issues. |
+| Attach Files | Attach files when needed (for example, screenshots). |
+| Send Messages in Threads | Post into thread channels. |
+
+## Installation
+
+<Steps>
+  <Step title="Navigate to integrations">
+    In Sentry, go to **Settings > Integrations** and find **Discord** in the Notifications group. Click **Install**.
+  </Step>
+  <Step title="Authorize the bot">
+    Sentry redirects you to Discord's OAuth page. Select the Discord server where you want to add the Sentry bot and click **Authorize**. You must have **Manage Server** permission on the Discord server.
+  </Step>
+  <Step title="Confirm the installation">
+    After authorization, Sentry redirects you back and the server appears as connected. The Sentry bot is now a member of your Discord server.
+  </Step>
+</Steps>
+
+<Note>
+The Sentry bot will only appear in channels it has been granted access to. Make sure the bot role has permission to read and write in the channels you want to use for alerts.
+</Note>
+
+## Setting up alert notifications
+
+<Steps>
+  <Step title="Open alert rules">
+    Go to **Alerts > Alert Rules** and create or edit a rule.
+  </Step>
+  <Step title="Add a Discord action">
+    Under **Then perform these actions**, click **Add action** and select **Send a Discord notification**.
+  </Step>
+  <Step title="Configure the action">
+    Enter the Discord server and channel ID where notifications should be posted.
+  </Step>
+  <Step title="Save the rule">
+    Save the alert rule. Sentry will post to the configured Discord channel whenever the rule conditions are met.
+  </Step>
+</Steps>
+
+<Tip>
+To find a channel ID in Discord, enable Developer Mode in **User Settings > App Settings > Advanced**, then right-click the channel and select **Copy Channel ID**.
+</Tip>
+
+## Interactive message actions
+
+When Sentry posts an alert to Discord, the message includes buttons that let you act on the issue:
+
+| Action | Description |
+|---|---|
+| **Resolve** | Marks the Sentry issue as resolved. |
+| **Ignore** | Ignores the issue (mutes notifications for it). |
+| **Assign** | Opens a menu to assign the issue to a team member. |
+
+To use these actions, your Discord account must be linked to your Sentry account.
+
+## Slash commands
+
+The Sentry Discord bot supports the following slash commands:
+
+| Command | Description |
+|---|---|
+| `/link` | Links your Discord account to your Sentry account. |
+| `/unlink` | Unlinks your Discord account from Sentry. |
+| `/help` | Shows available bot commands. |
+
+Type `/sentry link` in any Discord channel where the Sentry bot is present to start the identity linking flow.
+
+## Removing the integration
+
+Removing the Discord integration from Sentry also removes the Sentry bot from your Discord server if no other Sentry organizations are using it. To remove the integration, go to **Settings > Integrations > Discord** and click **Uninstall**.

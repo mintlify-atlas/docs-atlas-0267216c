@@ -1,0 +1,73 @@
+---
+title: Self-hosted Sentry
+description: Run Sentry on your own infrastructure using Docker Compose.
+---
+
+Sentry can be deployed on your own servers instead of using the managed cloud service at sentry.io. The self-hosted distribution is the same codebase as the cloud product and is distributed as a Docker Compose application.
+
+## When to self-host
+
+Self-hosting is a good fit when you:
+
+- Must keep event data within your own network or a specific region
+- Have compliance requirements that prevent sending data to a third-party SaaS
+- Want to customize Sentry's configuration or run it behind an internal firewall
+
+<Note>
+  The managed cloud service at [sentry.io](https://sentry.io) has a free tier and requires no infrastructure to maintain. If you don't have a specific reason to self-host, the cloud service is the faster way to get started.
+</Note>
+
+## How it works
+
+The self-hosted distribution uses **Docker Compose** to orchestrate all of Sentry's required services:
+
+- **Sentry web** — the Django application and API server
+- **Sentry worker** — Celery background task workers
+- **Sentry cron** — scheduled task processor
+- **PostgreSQL** — primary relational database
+- **Redis** — caching, rate limiting, and queuing
+- **ClickHouse (via Snuba)** — event storage and querying
+- **Relay** — event ingestion and filtering proxy
+- **Symbolicator** — debug symbol processing for native and mobile crashes
+
+All services are configured through a `sentry.conf.py` file and environment variables. The configuration file extends Sentry's defaults and supports overriding any Django setting.
+
+```python
+# sentry.conf.py example — configure your database and Redis connections
+from sentry.conf.server import *
+import os
+
+env = os.environ.get
+
+DATABASES = {
+    "default": {
+        "ENGINE": "sentry.db.postgres",
+        "NAME": env("SENTRY_DB_NAME") or "sentry",
+        "USER": env("SENTRY_DB_USER") or "sentry",
+        "PASSWORD": env("SENTRY_DB_PASSWORD") or "",
+        "HOST": env("SENTRY_POSTGRES_HOST") or "postgres",
+        "PORT": env("SENTRY_POSTGRES_PORT") or "",
+    }
+}
+
+SENTRY_CACHE = "sentry.cache.redis.RedisCache"
+```
+
+## Single-organization mode
+
+Self-hosted installations default to single-organization mode:
+
+```python
+# sentry.conf.py
+SENTRY_SINGLE_ORGANIZATION = True
+```
+
+In this mode, the UI hides organization-switching controls and assumes all users belong to one organization. Set this to `False` if you want to host multiple organizations on a single instance.
+
+## Full installation guide
+
+For complete installation instructions, including system requirements, initial setup commands, upgrade procedures, and backup guidance, see the **Self-hosted** tab in the sidebar.
+
+<Tip>
+  The official self-hosted repository at [github.com/getsentry/self-hosted](https://github.com/getsentry/self-hosted) contains the Docker Compose files, an automated install script, and release changelogs.
+</Tip>

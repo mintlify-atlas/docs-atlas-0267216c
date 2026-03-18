@@ -1,0 +1,86 @@
+---
+title: Microsoft Teams
+description: Send Sentry alert notifications to Microsoft Teams channels and interact with issues directly from Teams messages.
+---
+
+The Microsoft Teams integration connects your Sentry organization to a Teams workspace. It posts alert notifications to channels or users and supports interactive message actions so you can respond to issues without leaving Teams.
+
+## Features
+
+<CardGroup cols={2}>
+  <Card title="Alert notifications" icon="bell">
+    Route Sentry alerts to any Teams channel or user based on alert rule conditions.
+  </Card>
+  <Card title="Interactive messages" icon="mouse-pointer-click">
+    Assign, ignore, and resolve Sentry issues directly from Teams adaptive card messages.
+  </Card>
+  <Card title="Channel and DM support" icon="message-square">
+    Post notifications to team channels or send direct messages to individual users.
+  </Card>
+</CardGroup>
+
+## Installation
+
+The Teams integration is installed through the Microsoft Teams Marketplace, not directly in Sentry.
+
+<Steps>
+  <Step title="Find the Sentry app in Teams Marketplace">
+    In Microsoft Teams, open the **Apps** section and search for **Sentry**. Alternatively, use the direct install link from the [Teams Marketplace](https://teams.microsoft.com/l/app/).
+  </Step>
+  <Step title="Add to your team">
+    Click **Add to a team** and select the team where you want to receive Sentry notifications. Click **Set up a bot**.
+  </Step>
+  <Step title="Complete setup in the General channel">
+    After adding the bot, Sentry sends a welcome message to the **General** channel of your team. Click the link in the welcome message to complete the installation in Sentry.
+  </Step>
+  <Step title="Authorize in Sentry">
+    You are redirected to Sentry to confirm the connection between your Teams tenant and your Sentry organization. Sign in and click **Accept**.
+  </Step>
+</Steps>
+
+<Note>
+The Teams integration cannot be installed directly from **Settings > Integrations** in Sentry. The installation must start from the Microsoft Teams app store.
+</Note>
+
+## Setting up alert notifications
+
+<Steps>
+  <Step title="Open alert rules">
+    Go to **Alerts > Alert Rules** and create or edit a rule.
+  </Step>
+  <Step title="Add a Teams action">
+    Under **Then perform these actions**, click **Add action** and select **Send a Microsoft Teams notification**.
+  </Step>
+  <Step title="Configure the action">
+    Choose the Teams workspace and the target channel or user for the notification.
+  </Step>
+  <Step title="Save the rule">
+    Save the alert rule. Sentry will post to the configured target whenever the rule conditions are met.
+  </Step>
+</Steps>
+
+## Interactive message actions
+
+When Sentry posts an alert to Teams, it sends an adaptive card that includes action buttons:
+
+| Action | Description |
+|---|---|
+| **Resolve** | Marks the Sentry issue as resolved. |
+| **Ignore** | Ignores the issue (mutes notifications for it). |
+| **Assign** | Opens a menu to assign the issue to a team member. |
+
+These actions update the Sentry issue in real time and reflect the change in the Teams card.
+
+## Linking your identity
+
+To receive personal notifications and use interactive actions, link your Teams identity to your Sentry account:
+
+1. In Teams, open a direct message with the Sentry bot.
+2. Send a message or follow the prompt to link your account.
+3. Click the link provided to complete the identity connection in Sentry.
+
+## Supported Teams features
+
+- **Team channels**: Post notifications to channels in any team where the Sentry bot has been installed.
+- **Direct messages**: Send notifications directly to individual users who have linked their identities.
+- **Adaptive cards**: Notifications use Teams adaptive cards for rich formatting and interactive buttons.

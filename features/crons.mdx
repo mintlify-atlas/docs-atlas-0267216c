@@ -1,0 +1,161 @@
+---
+title: Cron monitors
+description: Track whether your scheduled jobs run on time and alert when they miss, fail, or time out.
+---
+
+Sentry Cron Monitors let you verify that your scheduled jobs — cron jobs, background workers, data pipelines, and any other periodic task — execute on time and successfully. If a job misses its schedule, runs too long, or exits with an error, Sentry creates an issue and alerts the team.
+
+## How it works
+
+Your job sends **check-in** signals to Sentry at the start and end of each execution. Sentry compares these signals against the configured schedule and raises an incident if:
+
+- The job does not check in within the expected window (missed)
+- The job checks in as `in_progress` but does not complete within the max runtime (timed out)
+- The job checks in with `error` status (failed)
+
+## Check-in protocol
+
+A job communicates its status via three check-in states:
+
+| Status | Meaning |
+|---|---|
+| `in_progress` | The job has started. Sentry starts the timeout clock. |
+| `ok` | The job completed successfully. Resets the monitor to healthy. |
+| `error` | The job completed with an error. Creates or updates an incident. |
+
+## Instrumenting a cron job
+
+<Tabs>
+  <Tab title="Python">
+```python
+import sentry_sdk
+from sentry_sdk.crons import monitor
+
+sentry_sdk.init(dsn="...")
+
+# Option 1: decorator
+@monitor(monitor_slug="my-daily-job")
+def daily_job():
+    # your job logic here
+    process_reports()
+
+# Option 2: context manager
+def daily_job():
+    with sentry_sdk.monitor(monitor_slug="my-daily-job"):
+        process_reports()
+
+# Option 3: manual check-ins
+def daily_job():
+    check_in_id = sentry_sdk.capture_checkin(
+        monitor_slug="my-daily-job",
+        status=sentry_sdk.crons.MonitorStatus.IN_PROGRESS,
+    )
+    try:
+        process_reports()
+        sentry_sdk.capture_checkin(
+            monitor_slug="my-daily-job",
+            check_in_id=check_in_id,
+            status=sentry_sdk.crons.MonitorStatus.OK,
+            duration=elapsed_seconds,
+        )
+    except Exception:
+        sentry_sdk.capture_checkin(
+            monitor_slug="my-daily-job",
+            check_in_id=check_in_id,
+            status=sentry_sdk.crons.MonitorStatus.ERROR,
+        )
+        raise
+```
+  </Tab>
+  <Tab title="Node.js">
+```javascript
+import * as Sentry from "@sentry/node";
+
+Sentry.init({ dsn: "..." });
+
+// Using withMonitor helper
+const result = await Sentry.withMonitor(
+  "my-daily-job",
+  async () => {
+    return await processReports();
+  }
+);
+```
+  </Tab>
+  <Tab title="Shell">
+```bash
+# HTTP check-in via curl
+JOB_ID=$(curl -s -X POST \
+  https://sentry.io/api/0/organizations/MY_ORG/monitors/my-daily-job/checkins/ \
+  -H "Authorization: DSN MY_DSN" \
+  -H "Content-Type: application/json" \
+  -d '{"status": "in_progress"}' | jq -r '.id')
+
+# ... run your job ...
+
+curl -s -X PUT \
+  https://sentry.io/api/0/organizations/MY_ORG/monitors/my-daily-job/checkins/${JOB_ID}/ \
+  -H "Authorization: DSN MY_DSN" \
+  -H "Content-Type: application/json" \
+  -d '{"status": "ok"}'
+```
+  </Tab>
+</Tabs>
+
+## Schedule types
+
+Sentry supports two schedule formats:
+
+<CardGroup cols={2}>
+  <Card title="Crontab" icon="clock">
+    Standard Unix cron expression. For example, `0 9 * * 1-5` runs at 9 AM Monday through Friday.
+
+    ```json
+    {
+      "schedule_type": "crontab",
+      "schedule": "0 9 * * 1-5",
+      "timezone": "America/New_York"
+    }
+    ```
+  </Card>
+  <Card title="Interval" icon="rotate">
+    Simple interval expressed as a count and unit (minute, hour, day, week, month).
+
+    ```json
+    {
+      "schedule_type": "interval",
+      "schedule": [30, "minute"]
+    }
+    ```
+  </Card>
+</CardGroup>
+
+## Monitor configuration
+
+When creating or updating a monitor, you can configure:
+
+| Setting | Description |
+|---|---|
+| `checkin_margin` | Minutes after the expected check-in time before declaring a miss (minimum: 1 minute) |
+| `max_runtime` | Maximum minutes an `in_progress` check-in can run before being marked as timed out (default: 30 minutes, maximum: 28 days) |
+| `timezone` | IANA timezone for interpreting the crontab schedule |
+| `failure_issue_threshold` | Number of consecutive failures before creating an issue (default: 1) |
+| `recovery_threshold` | Number of consecutive successes before resolving an incident (default: 1) |
+
+## Monitor statuses
+
+| Status | Description |
+|---|---|
+| `ok` | All check-ins are arriving on schedule and completing successfully |
+| `error` | The monitor is in an active incident state |
+| `missed` | A check-in was not received within the expected window |
+| `timed_out` | A check-in was started but did not complete within `max_runtime` |
+| `disabled` | The monitor has been manually disabled |
+
+## Alerts
+
+You can attach an issue alert rule to a cron monitor to control how incidents are routed. By default, Sentry uses the project's default alert rule. You can customize the alert to notify specific teams or channels when the monitor fails.
+
+<Note>
+Each organization has a maximum number of monitors. Monitors also have a per-organization environment limit. If you hit these limits, Sentry will raise a `MonitorLimitsExceeded` error and reject new monitor creation.
+</Note>

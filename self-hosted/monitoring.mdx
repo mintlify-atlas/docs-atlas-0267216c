@@ -1,0 +1,190 @@
+---
+title: Monitoring
+description: Monitor the health of your self-hosted Sentry instance.
+---
+
+A healthy self-hosted Sentry deployment depends on several services running together. This page covers how to check service status, read logs, and set up ongoing health monitoring.
+
+## Health check endpoint
+
+Sentry exposes a health check endpoint at `/_health/`:
+
+```bash
+curl http://localhost:9000/_health/
+# Returns: ok
+```
+
+For a detailed health report including the status of individual subsystems, add the `full` query parameter:
+
+```bash
+curl http://localhost:9000/_health/?full
+```
+
+The full response is JSON with a list of problems and a per-check healthy status. The endpoint returns HTTP 200 when healthy and HTTP 500 when there are critical problems.
+
+Use `/_health/` as your load balancer or uptime monitor target.
+
+## Docker Compose service status
+
+To see the current state of all services:
+
+```bash
+docker compose ps
+```
+
+All services should show a state of `Up`. A service in `Exit` or `Restarting` state indicates a problem — check its logs for details.
+
+To restart a single service:
+
+```bash
+docker compose restart web
+```
+
+To restart all services:
+
+```bash
+docker compose restart
+```
+
+## Viewing logs
+
+To follow logs for all services:
+
+```bash
+docker compose logs -f
+```
+
+To follow logs for a specific service:
+
+```bash
+docker compose logs -f web
+docker compose logs -f worker
+docker compose logs -f relay
+```
+
+Common services to watch:
+
+| Service | What it does |
+| --- | --- |
+| `web` | Serves the Sentry UI and API |
+| `worker` | Processes background Celery tasks |
+| `cron` | Runs scheduled jobs |
+| `relay` | Accepts and filters inbound events |
+| `ingest-events` | Kafka consumer for error events |
+| `ingest-transactions` | Kafka consumer for transaction events |
+| `post-process-forwarder-errors` | Forwards events for post-processing |
+
+### Log levels
+
+Sentry logs at `INFO` level by default. To increase verbosity for debugging, set the log level in `sentry.conf.py`:
+
+```python
+import logging
+logging.basicConfig(level=logging.DEBUG)
+```
+
+<Warning>
+  Debug logging generates significant output. Only enable it temporarily for troubleshooting.
+</Warning>
+
+## Sentry reporting to itself
+
+You can configure your self-hosted Sentry instance to report its own errors to itself (or to another Sentry instance). This gives you visibility into internal errors and unexpected exceptions.
+
+To enable self-reporting, create a project in Sentry, then set the DSN in `sentry.conf.py`:
+
+```python
+SENTRY_SDK_CONFIG = {
+    "dsn": "https://your-dsn@your-sentry-host/project-id",
+    "traces_sample_rate": 0.1,
+}
+```
+
+This is particularly useful for catching errors in background workers and the event pipeline that might not surface as obvious service failures.
+
+## Key services to monitor
+
+### Web workers
+
+The `web` service runs the Sentry HTTP server. If it's down, users will see a 502 Bad Gateway error. Monitor it with:
+
+```bash
+docker compose logs -f web
+```
+
+Watch for `ERROR` lines and worker crash/restart messages.
+
+### Celery workers
+
+Celery handles background processing (notifications, issue grouping, data cleanup). If workers are down, issues will stop processing and alerts won't fire.
+
+```bash
+docker compose logs -f worker
+```
+
+### Relay
+
+Relay is the event ingestion gateway. If Relay is down, no new events will arrive in Sentry, even if the web UI appears functional.
+
+```bash
+docker compose logs -f relay
+```
+
+### Kafka consumers
+
+Kafka consumers process ingested events. Check for consumer lag — if consumers fall behind, events will be delayed.
+
+```bash
+docker compose logs -f ingest-events
+docker compose logs -f post-process-forwarder-errors
+```
+
+## Metrics
+
+Sentry can emit metrics to StatsD-compatible systems. To enable, configure the backend in `sentry.conf.py`:
+
+```python
+SENTRY_METRICS_BACKEND = 'sentry.metrics.statsd.StatsdMetricsBackend'
+SENTRY_METRICS_OPTIONS = {
+    'host': 'statsd.example.com',
+    'port': 8125,
+}
+```
+
+For Datadog:
+
+```python
+SENTRY_METRICS_BACKEND = 'sentry.metrics.datadog.DatadogMetricsBackend'
+SENTRY_METRICS_OPTIONS = {
+    'api_key': 'your-datadog-api-key',
+    'app_key': 'your-datadog-app-key',
+    'host': 'statsd.example.com',
+}
+```
+
+### Key metrics to track
+
+| Metric | What to watch for |
+| --- | --- |
+| Queue depth | Celery queue growing without draining |
+| Event processing latency | Time from ingest to issue creation |
+| Error rate | Spike in 5xx responses from the web service |
+| Worker concurrency | Workers saturated under load |
+
+## Resource usage
+
+Monitor host-level resource usage alongside Sentry service metrics:
+
+```bash
+# CPU and memory per container
+docker stats
+```
+
+High memory usage typically indicates:
+- Too many Celery workers running with high concurrency
+- Memory leaks in long-running workers (check uptime and restart if needed)
+- ClickHouse/Snuba queries holding large result sets in memory
+
+High disk usage typically indicates:
+- Event volume exceeding the configured retention period
+- File attachments accumulating in local file storage without cleanup

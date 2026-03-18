@@ -1,0 +1,336 @@
+---
+title: Issues
+description: List, query, update, and delete issues (error groups) using the Sentry API.
+---
+
+Issues (also called groups) are aggregations of individual events that share the same root cause. The issues API lets you list, filter, update, and delete issues at both the project and organization level.
+
+## List issues for a project
+
+```
+GET /api/0/projects/{organization_id_or_slug}/{project_id_or_slug}/issues/
+```
+
+Returns a list of issues bound to a project.
+
+<Note>
+This endpoint is deprecated. Use [List issues for an organization](#list-issues-for-an-organization) instead, which supports additional filtering and sorting options.
+</Note>
+
+**Required scope:** `event:read`
+
+### Path parameters
+
+<ParamField path="organization_id_or_slug" type="string" required>
+  The ID or slug of the organization.
+</ParamField>
+
+<ParamField path="project_id_or_slug" type="string" required>
+  The ID or slug of the project.
+</ParamField>
+
+### Query parameters
+
+<ParamField query="query" type="string">
+  A Sentry structured search query. Defaults to `is:unresolved` if not provided. Pass an empty string (`query=`) to return all issues regardless of status.
+</ParamField>
+
+<ParamField query="statsPeriod" type="string">
+  The time period for inline stats. One of `24h`, `14d`, or `""` to disable. Defaults to `24h`.
+</ParamField>
+
+<ParamField query="shortIdLookup" type="boolean">
+  Set to `1` to also search by short ID (e.g. `PUMP-STATION-1`).
+</ParamField>
+
+<ParamField query="cursor" type="string">
+  Pagination cursor from the `Link` response header.
+</ParamField>
+
+### Example request
+
+```bash
+curl "https://sentry.io/api/0/projects/my-org/pump-station/issues/?query=is:unresolved" \
+  -H "Authorization: Bearer <token>"
+```
+
+---
+
+## List issues for an organization
+
+```
+GET /api/0/organizations/{organization_id_or_slug}/issues/
+```
+
+Returns a list of issues across all projects in the organization. Supports rich filtering using Sentry's search query syntax.
+
+**Required scope:** `event:read`
+
+### Path parameters
+
+<ParamField path="organization_id_or_slug" type="string" required>
+  The ID or slug of the organization.
+</ParamField>
+
+### Query parameters
+
+<ParamField query="query" type="string">
+  A Sentry structured search query. Defaults to `is:unresolved`. Examples:
+  - `is:unresolved` — unresolved issues
+  - `is:resolved` — resolved issues
+  - `assigned:me` — issues assigned to you
+  - `level:error` — error-level issues
+  - `issue.category:feedback` — user feedback items
+</ParamField>
+
+<ParamField query="project" type="integer">
+  Filter by project ID. Can be repeated for multiple projects.
+</ParamField>
+
+<ParamField query="environment" type="string">
+  Filter by environment name.
+</ParamField>
+
+<ParamField query="statsPeriod" type="string">
+  Time period for inline stats. One of `24h` or `14d`.
+</ParamField>
+
+<ParamField query="limit" type="integer">
+  Number of results per page. Maximum is 100. Defaults to 25.
+</ParamField>
+
+<ParamField query="cursor" type="string">
+  Pagination cursor from the `Link` response header.
+</ParamField>
+
+### Example request
+
+```bash
+curl "https://sentry.io/api/0/organizations/my-org/issues/?query=is:unresolved&environment=production&limit=25" \
+  -H "Authorization: Bearer <token>"
+```
+
+### Example response
+
+```json
+[
+  {
+    "id": "1",
+    "shortId": "PUMP-STATION-1",
+    "title": "This is an example Python exception",
+    "culprit": "raven.scripts.runner in main",
+    "status": "unresolved",
+    "statusDetails": {},
+    "level": "error",
+    "count": "1",
+    "userCount": 0,
+    "firstSeen": "2018-11-06T21:19:55Z",
+    "lastSeen": "2018-11-06T21:19:55Z",
+    "assignedTo": null,
+    "isBookmarked": false,
+    "isPublic": false,
+    "isSubscribed": true,
+    "hasSeen": false,
+    "numComments": 0,
+    "permalink": "https://sentry.io/the-interstellar-jurisdiction/pump-station/issues/1/",
+    "project": {
+      "id": "2",
+      "name": "Pump Station",
+      "slug": "pump-station"
+    },
+    "metadata": {
+      "title": "This is an example Python exception"
+    },
+    "type": "default",
+    "annotations": []
+  }
+]
+```
+
+### Response fields
+
+<ResponseField name="id" type="string">
+  The unique ID of the issue.
+</ResponseField>
+
+<ResponseField name="shortId" type="string">
+  A human-readable issue identifier (e.g. `PUMP-STATION-1`).
+</ResponseField>
+
+<ResponseField name="title" type="string">
+  The issue title, derived from the exception or log message.
+</ResponseField>
+
+<ResponseField name="culprit" type="string">
+  The code path or function where the error occurred.
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  The current status. One of `unresolved`, `resolved`, `ignored`, or `reprocessing`.
+</ResponseField>
+
+<ResponseField name="level" type="string">
+  The severity level. One of `fatal`, `error`, `warning`, `info`, or `debug`.
+</ResponseField>
+
+<ResponseField name="count" type="string">
+  The total number of events in this issue.
+</ResponseField>
+
+<ResponseField name="userCount" type="integer">
+  The number of unique users affected.
+</ResponseField>
+
+<ResponseField name="firstSeen" type="string">
+  ISO 8601 timestamp of when the issue was first seen.
+</ResponseField>
+
+<ResponseField name="lastSeen" type="string">
+  ISO 8601 timestamp of when the issue was most recently seen.
+</ResponseField>
+
+<ResponseField name="assignedTo" type="object | null">
+  The user or team the issue is assigned to, or `null` if unassigned.
+</ResponseField>
+
+---
+
+## Retrieve an issue
+
+```
+GET /api/0/organizations/{organization_id_or_slug}/issues/{issue_id}/
+```
+
+Returns detailed information for a single issue, including activity, tags, and the most recent event summary.
+
+**Required scope:** `event:read`
+
+### Path parameters
+
+<ParamField path="organization_id_or_slug" type="string" required>
+  The ID or slug of the organization.
+</ParamField>
+
+<ParamField path="issue_id" type="string" required>
+  The ID of the issue.
+</ParamField>
+
+### Example request
+
+```bash
+curl https://sentry.io/api/0/organizations/my-org/issues/1/ \
+  -H "Authorization: Bearer <token>"
+```
+
+---
+
+## Update an issue
+
+```
+PUT /api/0/organizations/{organization_id_or_slug}/issues/{issue_id}/
+```
+
+Updates attributes on an individual issue. Only the fields you include in the request body are modified.
+
+**Required scope:** `event:write`
+
+### Path parameters
+
+<ParamField path="organization_id_or_slug" type="string" required>
+  The ID or slug of the organization.
+</ParamField>
+
+<ParamField path="issue_id" type="string" required>
+  The ID of the issue to update.
+</ParamField>
+
+### Request body
+
+<ParamField body="status" type="string">
+  The new status. One of `resolved`, `resolvedInNextRelease`, `unresolved`, or `ignored`.
+</ParamField>
+
+<ParamField body="assignedTo" type="string">
+  The actor ID or username of the user or team to assign the issue to. Use the format `team:slug` to assign to a team.
+</ParamField>
+
+<ParamField body="isBookmarked" type="boolean">
+  Whether the current user bookmarks the issue.
+</ParamField>
+
+<ParamField body="isSubscribed" type="boolean">
+  Whether the current user subscribes to workflow notifications for the issue.
+</ParamField>
+
+<ParamField body="isPublic" type="boolean">
+  Whether to make the issue publicly viewable.
+</ParamField>
+
+<ParamField body="hasSeen" type="boolean">
+  Marks the issue as seen or unseen for the current user.
+</ParamField>
+
+### Example request
+
+```bash
+curl -X PUT https://sentry.io/api/0/organizations/my-org/issues/1/ \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"status": "resolved"}'
+```
+
+---
+
+## Bulk update issues
+
+```
+PUT /api/0/projects/{organization_id_or_slug}/{project_id_or_slug}/issues/
+```
+
+Updates multiple issues at once. Pass one or more `id` query parameters to specify which issues to update. Omit `id` to update all issues matching the optional `status` filter.
+
+**Required scope:** `event:write`
+
+### Query parameters
+
+<ParamField query="id" type="integer">
+  The ID of an issue to update. Repeat this parameter for each issue: `?id=1&id=2&id=3`.
+</ParamField>
+
+<ParamField query="status" type="string">
+  Restrict the bulk operation to issues with this status. One of `resolved`, `unresolved`, `ignored`, or `reprocessing`.
+</ParamField>
+
+### Example request
+
+```bash
+curl -X PUT "https://sentry.io/api/0/projects/my-org/pump-station/issues/?id=1&id=2" \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"status": "resolved"}'
+```
+
+---
+
+## Delete an issue
+
+```
+DELETE /api/0/organizations/{organization_id_or_slug}/issues/{issue_id}/
+```
+
+Permanently removes an issue and all of its associated events.
+
+**Required scope:** `event:admin`
+
+<Warning>
+This operation is permanent and cannot be undone.
+</Warning>
+
+### Example request
+
+```bash
+curl -X DELETE https://sentry.io/api/0/organizations/my-org/issues/1/ \
+  -H "Authorization: Bearer <token>"
+```
+
+A successful deletion returns `202 Accepted`.

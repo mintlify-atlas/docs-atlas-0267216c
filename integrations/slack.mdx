@@ -1,0 +1,112 @@
+---
+title: Slack
+description: Send Sentry alert notifications to Slack channels, resolve and assign issues directly from Slack messages, and use slash commands to query Sentry.
+---
+
+The Slack integration connects your Sentry organization to one or more Slack workspaces. It sends alert notifications to channels or users, supports interactive message actions, and unfurls Sentry URLs in Slack conversations.
+
+## Features
+
+<CardGroup cols={2}>
+  <Card title="Alert notifications" icon="bell">
+    Route Sentry alerts to any Slack channel or user based on alert rule conditions.
+  </Card>
+  <Card title="Interactive messages" icon="mouse-pointer-click">
+    Resolve, ignore, and assign Sentry issues directly from the Slack message without switching context.
+  </Card>
+  <Card title="URL unfurling" icon="link">
+    Sentry URLs posted in Slack automatically expand to show issue details, status, and assignee.
+  </Card>
+  <Card title="Slash commands" icon="terminal">
+    Use `/sentry` slash commands in Slack to query and manage issues.
+  </Card>
+</CardGroup>
+
+## Installation
+
+<Steps>
+  <Step title="Navigate to integrations">
+    In Sentry, go to **Settings > Integrations** and find **Slack** in the Notifications group. Click **Install**.
+  </Step>
+  <Step title="Authorize the Slack app">
+    Sentry redirects you to Slack to authorize the Sentry app for your workspace. You must be a Slack workspace admin, or request admin approval if required by your workspace settings.
+  </Step>
+  <Step title="Confirm the workspace">
+    After authorization, Sentry redirects you back and the workspace appears as connected. You can repeat the process to connect additional workspaces.
+  </Step>
+</Steps>
+
+<Note>
+The Slack integration does not send notifications automatically after installation. You must create alert rules with a Slack action to start receiving notifications.
+</Note>
+
+## Setting up alert notifications
+
+<Steps>
+  <Step title="Open alert rules">
+    Go to **Alerts > Alert Rules** and create or edit a rule.
+  </Step>
+  <Step title="Add a Slack action">
+    Under **Then perform these actions**, click **Add action** and select **Send a Slack notification**.
+  </Step>
+  <Step title="Configure the action">
+    Choose the Slack workspace, then enter the channel name (for example, `#backend-alerts`) or the user's name for a direct message. You can optionally customize the notification message.
+  </Step>
+  <Step title="Save the rule">
+    Save the alert rule. Sentry will post to the configured Slack channel or user whenever the rule conditions are met.
+  </Step>
+</Steps>
+
+## Interactive message actions
+
+When Sentry sends an alert to Slack, the message includes action buttons that let you respond without leaving Slack:
+
+| Action | Description |
+|---|---|
+| **Resolve** | Marks the Sentry issue as resolved. |
+| **Ignore** | Ignores the issue (mutes notifications for it). |
+| **Assign** | Opens a menu to assign the issue to a team member. |
+
+To use these actions, your Slack account must be linked to your Sentry account. On your first interaction, Sentry prompts you to connect your accounts via a link identity flow.
+
+## URL unfurling
+
+When you paste a Sentry issue URL into a Slack message, Sentry automatically expands it to show:
+
+- Issue title and culprit
+- Current status and assignee
+- Number of events and users affected
+- Direct links to resolve, ignore, or assign
+
+Unfurling happens when someone posts a sentry.io URL in any channel where the Sentry app is present.
+
+## Slash commands
+
+The Sentry Slack app provides the `/sentry` slash command.
+
+| Command | Description |
+|---|---|
+| `/sentry link` | Links your Slack account to your Sentry account. |
+| `/sentry unlink` | Unlinks your Slack account from Sentry. |
+| `/sentry help` | Shows available slash commands. |
+
+## Linking your identity
+
+To use interactive message actions and personal notifications, link your Slack account to your Sentry account:
+
+1. Type `/sentry link` in any Slack channel.
+2. Click the link in the Slack message to open the Sentry identity linking page.
+3. Confirm the connection.
+
+To unlink your identity, type `/sentry unlink`.
+
+## Linking a team
+
+You can link a Sentry team to a Slack channel so that notifications assigned to that team are routed to the channel:
+
+1. In the channel you want to link, type `/sentry link team`.
+2. Follow the prompts to select your Sentry organization and team.
+
+## Multiple workspaces
+
+Sentry supports connecting multiple Slack workspaces to a single Sentry organization. Repeat the installation process for each workspace you want to connect. Alert rule actions let you specify which workspace and channel to use for each rule.

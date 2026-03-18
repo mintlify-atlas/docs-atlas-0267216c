@@ -1,0 +1,128 @@
+---
+title: Upgrading
+description: Upgrade your self-hosted Sentry instance to a new version.
+---
+
+Sentry follows a regular release cadence. Upgrading involves pulling the latest version of the self-hosted repository and running the install script, which handles image updates and database migrations automatically.
+
+<Warning>
+  Always back up your PostgreSQL database before upgrading. Migrations cannot be reversed automatically. See the [backup guide](/self-hosted/backup) for instructions.
+</Warning>
+
+## Check your current version
+
+To see which version you're currently running:
+
+```bash
+docker compose exec web sentry --version
+```
+
+You can also check the `SENTRY_IMAGE` variable in your `.env` file to see the pinned image tag.
+
+## Upgrade steps
+
+<Steps>
+  <Step title="Back up your data">
+    Before upgrading, take a full database backup:
+
+    ```bash
+    docker compose exec postgres pg_dumpall -U postgres > sentry-backup-$(date +%Y%m%d).sql
+    ```
+
+    Keep this backup somewhere safe before proceeding.
+  </Step>
+
+  <Step title="Pull the latest self-hosted repository changes">
+    Fetch updates to the self-hosted repository:
+
+    ```bash
+    git -C /path/to/self-hosted pull
+    ```
+
+    Review the [CHANGELOG](https://github.com/getsentry/self-hosted/blob/master/CHANGELOG.md) for breaking changes before continuing.
+  </Step>
+
+  <Step title="Run the install script">
+    Run the install script. It pulls updated Docker images, runs any pending database migrations, and applies any configuration changes.
+
+    ```bash
+    ./install.sh
+    ```
+
+    Database migrations run automatically as part of `install.sh`. You do not need to run them separately.
+
+    <Note>
+      The install script is designed to be idempotent — it's safe to run multiple times.
+    </Note>
+  </Step>
+
+  <Step title="Restart services">
+    Bring all services up with the new images:
+
+    ```bash
+    docker compose up -d
+    ```
+
+    Docker Compose will restart only the containers whose images have changed.
+  </Step>
+
+  <Step title="Verify the upgrade">
+    Check that all services are healthy:
+
+    ```bash
+    docker compose ps
+    ```
+
+    Then confirm the new version is running:
+
+    ```bash
+    docker compose exec web sentry --version
+    ```
+
+    You can also hit the health check endpoint:
+
+    ```bash
+    curl http://localhost:9000/_health/
+    ```
+  </Step>
+</Steps>
+
+## How migrations work
+
+Sentry uses Django's migration system. When you run `install.sh` (or `docker compose run --rm web upgrade`), Sentry:
+
+1. Checks whether any pending migrations exist
+2. Runs each pending migration in order
+3. Records the completed migration in the `django_migrations` table
+
+Migrations are checked for history compatibility. If you attempt to skip a major version, the upgrade command will abort with an error pointing you to the upgrade documentation. Sentry enforces sequential upgrades at certain versions called **hard stops** — you must pass through them in order.
+
+To run migrations manually without using `install.sh`:
+
+```bash
+docker compose run --rm web upgrade
+```
+
+## Breaking changes
+
+Review the [self-hosted CHANGELOG](https://github.com/getsentry/self-hosted/blob/master/CHANGELOG.md) and the main [Sentry CHANGELOG](https://github.com/getsentry/sentry/blob/master/CHANGES) before each upgrade. Breaking changes are marked explicitly.
+
+Common sources of breaking changes:
+
+- Configuration variable renames or removals
+- Minimum PostgreSQL or Redis version requirements
+- Hard stops that require upgrading through intermediate versions
+- Changes to the Docker Compose service definitions
+
+## Rollback considerations
+
+Sentry does not support automatic rollback after running database migrations. If an upgrade causes issues:
+
+1. Stop all services: `docker compose down`
+2. Restore your database from the backup taken before upgrading
+3. Check out the previous version of the self-hosted repository: `git checkout <previous-tag>`
+4. Start services with the old images: `docker compose up -d`
+
+<Warning>
+  Restoring from a database backup on a newer schema is not supported. Always back up before upgrading, and test upgrades in a staging environment first if possible.
+</Warning>

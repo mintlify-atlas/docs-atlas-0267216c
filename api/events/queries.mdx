@@ -1,0 +1,184 @@
+---
+title: Event queries
+description: Query events across your organization using Discover-style field selection, conditions, and aggregations.
+---
+
+The events query endpoint is the primary way to search and analyze event data in Sentry. It supports flexible field selection, filtering, aggregations, and sorting — the same query engine that powers Sentry's Discover and Performance views.
+
+## Query events
+
+```
+GET /api/0/organizations/{organization_id_or_slug}/events/
+```
+
+Returns a list of events matching the given query, with the fields you specify.
+
+**Required scope:** `org:read`
+
+### Path parameters
+
+<ParamField path="organization_id_or_slug" type="string" required>
+  The ID or slug of the organization.
+</ParamField>
+
+### Query parameters
+
+<ParamField query="field" type="string" required>
+  The fields to include in the response. Repeat this parameter for multiple fields. Examples: `field=id&field=title&field=count()`. See [Available fields](#available-fields) below.
+</ParamField>
+
+<ParamField query="query" type="string">
+  A Sentry search query to filter results. Supports the same syntax as the Sentry UI search bar. Examples:
+  - `error.type:TypeError` — filter by exception type
+  - `transaction:/api/users/` — filter by transaction name
+  - `release:2.0.0` — filter by release version
+  - `user.email:user@example.com` — filter by user
+</ParamField>
+
+<ParamField query="project" type="integer">
+  Filter by project ID. Repeat for multiple projects.
+</ParamField>
+
+<ParamField query="environment" type="string">
+  Filter by environment name (e.g. `production`, `staging`).
+</ParamField>
+
+<ParamField query="statsPeriod" type="string">
+  A relative time window. Examples: `24h`, `7d`, `14d`, `30d`. Cannot be combined with `start`/`end`.
+</ParamField>
+
+<ParamField query="start" type="string">
+  ISO 8601 start of the time range. Requires `end`.
+</ParamField>
+
+<ParamField query="end" type="string">
+  ISO 8601 end of the time range. Requires `start`.
+</ParamField>
+
+<ParamField query="orderby" type="string">
+  Sort order. Prefix with `-` for descending. Example: `-count()` or `transaction.duration`.
+</ParamField>
+
+<ParamField query="limit" type="integer">
+  Number of results to return. Maximum is 100. Defaults to 50.
+</ParamField>
+
+<ParamField query="cursor" type="string">
+  Pagination cursor from the `Link` response header.
+</ParamField>
+
+<ParamField query="referrer" type="string">
+  An optional string identifying the caller, used for query attribution.
+</ParamField>
+
+### Example request
+
+```bash
+curl "https://sentry.io/api/0/organizations/my-org/events/?field=id&field=title&field=count()&query=is:unresolved&statsPeriod=24h" \
+  -H "Authorization: Bearer <token>"
+```
+
+### Example response
+
+```json
+{
+  "data": [
+    {
+      "id": "9999aaaaca8b46d797c23c6077c6ff01",
+      "title": "TypeError: Cannot read property 'id' of undefined",
+      "count()": 142
+    }
+  ],
+  "meta": {
+    "fields": {
+      "id": "string",
+      "title": "string",
+      "count()": "integer"
+    }
+  }
+}
+```
+
+### Response fields
+
+<ResponseField name="data" type="array">
+  An array of event objects containing the requested fields.
+</ResponseField>
+
+<ResponseField name="meta" type="object">
+  Metadata about the response, including a `fields` map of field names to their data types.
+</ResponseField>
+
+## Available fields
+
+### Event fields
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | string | Event ID |
+| `title` | string | Event title |
+| `message` | string | Raw event message |
+| `platform` | string | Platform (e.g. `python`) |
+| `timestamp` | string | Event timestamp |
+| `release` | string | Release version |
+| `dist` | string | Release distribution |
+| `environment` | string | Environment name |
+| `user.id` | string | User ID |
+| `user.email` | string | User email |
+| `user.username` | string | Username |
+| `user.ip` | string | User IP address |
+| `transaction` | string | Transaction name |
+| `error.type` | array | Exception type(s) |
+| `error.value` | array | Exception message(s) |
+| `stack.filename` | array | Stack frame filenames |
+| `stack.function` | array | Stack frame functions |
+| `level` | string | Severity level |
+| `project` | string | Project slug |
+| `issue` | string | Issue ID |
+| `os.name` | string | OS name |
+| `browser.name` | string | Browser name |
+| `device.family` | string | Device family |
+
+### Aggregation functions
+
+Use aggregation functions when you need summary statistics across events:
+
+| Function | Description | Example |
+|---|---|---|
+| `count()` | Total number of events | `count()` |
+| `count_unique(field)` | Number of unique values | `count_unique(user.email)` |
+| `avg(field)` | Average value | `avg(transaction.duration)` |
+| `sum(field)` | Sum of values | `sum(transaction.duration)` |
+| `min(field)` | Minimum value | `min(transaction.duration)` |
+| `max(field)` | Maximum value | `max(transaction.duration)` |
+| `p50(field)` | 50th percentile | `p50(transaction.duration)` |
+| `p75(field)` | 75th percentile | `p75(transaction.duration)` |
+| `p95(field)` | 95th percentile | `p95(transaction.duration)` |
+| `p99(field)` | 99th percentile | `p99(transaction.duration)` |
+| `failure_rate()` | Rate of failed transactions | `failure_rate()` |
+| `apdex(threshold)` | Apdex score | `apdex(300)` |
+| `eps()` | Events per second | `eps()` |
+| `epm()` | Events per minute | `epm()` |
+
+## Example queries
+
+### Top error types in production
+
+```bash
+curl "https://sentry.io/api/0/organizations/my-org/events/?field=error.type&field=count()&query=event.type:error&environment=production&orderby=-count()&statsPeriod=24h" \
+  -H "Authorization: Bearer <token>"
+```
+
+### Slow transactions by P95
+
+```bash
+curl "https://sentry.io/api/0/organizations/my-org/events/?field=transaction&field=p95(transaction.duration)&field=count()&query=event.type:transaction&orderby=-p95(transaction.duration)&statsPeriod=7d" \
+  -H "Authorization: Bearer <token>"
+```
+
+### Users affected by a specific error
+
+```bash
+curl "https://sentry.io/api/0/organizations/my-org/events/?field=user.email&field=count()&query=TypeError&orderby=-count()&statsPeriod=24h" \
+  -H "Authorization: Bearer <token>"
+```

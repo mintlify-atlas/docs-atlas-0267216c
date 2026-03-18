@@ -1,0 +1,124 @@
+---
+title: Projects
+description: A project is the basic unit for receiving and organizing event data in Sentry.
+---
+
+A **project** represents a single application or service you want to monitor. Every event — error, transaction, profile, replay, or check-in — is sent to Sentry through a project's unique **DSN** and stored under that project.
+
+## Projects and organizations
+
+Projects are always scoped to an **organization**. A single organization can contain many projects: one per microservice, one per mobile app, one per frontend — whatever granularity makes sense for your team.
+
+From the source model:
+
+```python
+# src/sentry/models/project.py
+class Project(Model):
+    """
+    Projects are permission based namespaces which generally
+    are the top level entry point for all data.
+    """
+    slug = SentrySlugField(max_length=PROJECT_SLUG_MAX_LENGTH)
+    name = models.CharField(max_length=200)
+    organization = FlexibleForeignKey("sentry.Organization")
+    teams = models.ManyToManyField("sentry.Team", through=ProjectTeam)
+    public = models.BooleanField(default=False)
+    first_event = models.DateTimeField(null=True)
+```
+
+## The DSN
+
+Each project has one or more **Client Keys**, each of which carries a **DSN** (Data Source Name). The DSN is a URL you provide to the Sentry SDK so it knows where to send events.
+
+DSN format:
+
+```
+https://<public_key>@o<org_id>.ingest.sentry.io/<project_id>
+```
+
+Internally, the DSN is constructed from the `ProjectKey` model:
+
+```python
+# src/sentry/models/projectkey.py
+def get_dsn(self, domain=None, secure=True, public=False):
+    urlparts = urlparse(self.get_endpoint())
+    key = self.public_key  # for public DSN
+    return f"{urlparts.scheme}://{key}@{urlparts.netloc + urlparts.path}/{self.project_id}"
+```
+
+To find your project's DSN:
+
+1. Open **Project Settings**.
+2. Click **Client Keys (DSN)** in the left sidebar.
+3. Copy the DSN value shown under your key.
+
+<Warning>
+  Treat the DSN like a semi-public credential. It allows anyone who has it to send events to your project. You can rotate or revoke keys from **Project Settings → Client Keys** at any time.
+</Warning>
+
+## Project slug and ID
+
+Every project has a **slug** — a URL-safe identifier used in the Sentry UI and API. Slugs are unique within an organization. The numeric **project ID** is used in DSN URLs and in API paths such as `/api/0/projects/<org_slug>/<project_slug>/`.
+
+## Teams and access
+
+Projects are linked to **teams** through a many-to-many relationship (`ProjectTeam`). A user's access to a project is determined by whether they are a member of any team assigned to that project.
+
+```python
+# ProjectManager.get_for_team_ids
+def get_for_team_ids(self, team_ids):
+    return self.filter(status=ObjectStatus.ACTIVE, teams__in=team_ids)
+```
+
+## Project settings
+
+| Setting | Description |
+|---|---|
+| **Platform** | The primary platform for the project (e.g. `python-django`, `javascript-react`). Controls which onboarding docs Sentry shows. |
+| **Alert rules** | Issue alerts that fire when events match certain conditions. Scoped per project. |
+| **Ownership rules** | Regex or path-based rules that assign issues to specific teams or users. |
+| **Inbound filters** | Block specific browsers, legacy IPs, or known error patterns before they are stored. |
+| **Data scrubbing** | Remove sensitive fields from events before they are saved. |
+| **Client keys (DSN)** | Manage the project's DSN keys and set per-key rate limits. |
+
+## Creating a project
+
+<Steps>
+  <Step title="Open Projects">
+    In the Sentry sidebar, click **Projects**, then click **Create Project** in the top-right corner.
+  </Step>
+  <Step title="Select a platform">
+    Choose the platform or framework your application uses. Sentry uses this to show platform-specific setup instructions.
+  </Step>
+  <Step title="Configure alerts">
+    Choose the default alert rule for the project. You can configure more detailed rules later under **Alerts**.
+  </Step>
+  <Step title="Name the project and assign a team">
+    Enter a project name and assign at least one team. The name becomes the project slug. Click **Create Project**.
+  </Step>
+</Steps>
+
+After creation, Sentry displays the DSN and setup instructions for the selected platform.
+
+## Supported platforms
+
+Sentry supports over 70 platforms and frameworks. A few examples from the source:
+
+```python
+# src/sentry/models/project.py — partial list
+GETTING_STARTED_DOCS_PLATFORMS = [
+    "python",
+    "python-django",
+    "python-flask",
+    "python-fastapi",
+    "javascript",
+    "javascript-react",
+    "javascript-nextjs",
+    "node",
+    "node-express",
+    "ruby-rails",
+    "java-spring-boot",
+    "go",
+    # ... and many more
+]
+```

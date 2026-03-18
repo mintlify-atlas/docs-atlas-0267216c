@@ -1,0 +1,201 @@
+---
+title: Webhooks
+description: Use service hooks to receive HTTP webhooks from Sentry when events are created or alerts fire, with HMAC signature verification.
+---
+
+Service hooks let you register HTTP endpoints to receive webhook payloads from Sentry. When a matching event occurs in a Sentry project, Sentry sends a POST request to your URL.
+
+## Available events
+
+Service hooks support the following event types:
+
+| Event | Description |
+|---|---|
+| `event.created` | Fired when a new error event is ingested. |
+| `event.alert` | Fired when an issue alert rule is triggered. |
+
+<Note>
+Service hooks are for raw events at the project level. For broader event subscriptions (issues, comments, metric alerts, installations), use [Sentry Apps](/integrations/sentry-apps) instead.
+</Note>
+
+## Creating a service hook
+
+<Steps>
+  <Step title="Navigate to project settings">
+    In Sentry, go to **Settings > Projects > [your project] > Service Hooks**.
+  </Step>
+  <Step title="Add a service hook">
+    Click **Add Service Hook** and fill in:
+    - **URL**: The HTTPS endpoint where Sentry should send payloads.
+    - **Events**: Select one or more events to subscribe to.
+  </Step>
+  <Step title="Save">
+    Click **Save changes**. Sentry generates a secret token for HMAC verification.
+  </Step>
+</Steps>
+
+## Webhook payload structure
+
+### `event.created`
+
+Fired when a new error event is ingested into a project.
+
+```json
+{
+  "id": "abc123def456",
+  "project": "my-project",
+  "project_id": "1",
+  "project_name": "My Project",
+  "culprit": "app.views.index in get",
+  "message": "TypeError: Cannot read property 'foo' of undefined",
+  "url": "https://sentry.io/organizations/my-org/issues/12345/",
+  "level": "error",
+  "logger": "",
+  "datetime": "2024-01-01T12:00:00.000Z",
+  "event": {
+    "event_id": "abc123def456",
+    "message": "TypeError: Cannot read property 'foo' of undefined",
+    "level": "error",
+    "platform": "python",
+    "timestamp": 1704067200.0,
+    "tags": [["environment", "production"], ["release", "1.0.0"]],
+    "exception": {
+      "values": [
+        {
+          "type": "TypeError",
+          "value": "Cannot read property 'foo' of undefined",
+          "stacktrace": {
+            "frames": []
+          }
+        }
+      ]
+    }
+  }
+}
+```
+
+### `event.alert`
+
+Fired when an issue alert rule condition is met.
+
+```json
+{
+  "id": "abc123def456",
+  "project": "my-project",
+  "project_id": "1",
+  "project_name": "My Project",
+  "culprit": "app.views.index in get",
+  "message": "TypeError: Cannot read property 'foo' of undefined",
+  "url": "https://sentry.io/organizations/my-org/issues/12345/",
+  "level": "error",
+  "triggering_rules": ["Rule Name"]
+}
+```
+
+## HMAC signature verification
+
+Every webhook request includes an `X-Sentry-Hook-Signature` header containing an HMAC-SHA256 signature. Verify this signature to confirm the request came from Sentry.
+
+The signature is computed as:
+
+```
+HMAC-SHA256(secret, request_body)
+```
+
+where `secret` is the token shown in the service hook settings.
+
+### Verification examples
+
+<CodeGroup>
+
+```python verify.py
+import hmac
+import hashlib
+
+def verify_signature(secret: str, payload: bytes, signature: str) -> bool:
+    expected = hmac.new(
+        key=secret.encode("utf-8"),
+        msg=payload,
+        digestmod=hashlib.sha256,
+    ).hexdigest()
+    return hmac.compare_digest(expected, signature)
+
+# In your request handler:
+# body = request.body  # raw bytes
+# sig = request.headers["X-Sentry-Hook-Signature"]
+# if not verify_signature(MY_SECRET, body, sig):
+#     return 401
+```
+
+```javascript verify.js
+const crypto = require('crypto');
+
+function verifySignature(secret, payload, signature) {
+  const expected = crypto
+    .createHmac('sha256', secret)
+    .update(payload)
+    .digest('hex');
+  return crypto.timingSafeEqual(
+    Buffer.from(expected),
+    Buffer.from(signature)
+  );
+}
+
+// In your request handler:
+// const body = req.rawBody; // raw Buffer
+// const sig = req.headers['x-sentry-hook-signature'];
+// if (!verifySignature(MY_SECRET, body, sig)) {
+//   return res.status(401).send('Invalid signature');
+// }
+```
+
+```go verify.go
+import (
+    "crypto/hmac"
+    "crypto/sha256"
+    "encoding/hex"
+    "net/http"
+)
+
+func verifySignature(secret string, payload []byte, signature string) bool {
+    mac := hmac.New(sha256.New, []byte(secret))
+    mac.Write(payload)
+    expected := hex.EncodeToString(mac.Sum(nil))
+    return hmac.Equal([]byte(expected), []byte(signature))
+}
+```
+
+</CodeGroup>
+
+<Warning>
+Always read the raw request body before parsing it. Parsing JSON first may alter the byte representation and cause signature verification to fail.
+</Warning>
+
+## Responding to webhooks
+
+Your endpoint must return a `2xx` HTTP status code within the request timeout. If Sentry receives a non-2xx response or the request times out, it does not retry the delivery.
+
+<Tip>
+Accept the webhook immediately and process it asynchronously. This prevents timeouts if your processing logic is slow.
+</Tip>
+
+## Managing service hooks via API
+
+You can also create and manage service hooks programmatically using the Sentry API.
+
+```bash
+# Create a service hook
+curl -X POST https://sentry.io/api/0/projects/{organization_slug}/{project_slug}/hooks/ \
+  -H 'Authorization: Bearer YOUR_TOKEN' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "url": "https://example.com/sentry-webhook",
+    "events": ["event.created", "event.alert"]
+  }'
+```
+
+```bash
+# List service hooks
+curl https://sentry.io/api/0/projects/{organization_slug}/{project_slug}/hooks/ \
+  -H 'Authorization: Bearer YOUR_TOKEN'
+```

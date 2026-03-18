@@ -1,0 +1,88 @@
+---
+title: Tracing
+description: Follow requests end-to-end across services using distributed traces and the Trace Explorer.
+---
+
+Distributed tracing lets you follow a single request as it travels through multiple services. Sentry's tracing builds on the **W3C Trace Context** standard to propagate trace identifiers across service boundaries automatically.
+
+## Core concepts
+
+### Trace
+
+A **trace** is the complete picture of a request as it moves across services. A trace has a globally unique `trace_id` (a 32-character hex string) shared by all transactions and spans that are part of the same logical operation.
+
+### Transaction
+
+A **transaction** represents a unit of work within a single service — for example, one HTTP request handler or one background job. A trace contains one or more transactions.
+
+### Span
+
+A **span** is an individual timed operation within a transaction (for example, a SQL query, an external HTTP call, or a cache lookup). Spans form a parent–child tree. Each span carries:
+
+- `span_id` — unique identifier
+- `parent_span_id` — reference to the parent span
+- `op` — operation category (for example, `db`, `http`, `cache`)
+- `description` — human-readable label
+- `start_timestamp` and `end_timestamp`
+- `status` — `ok`, `error`, `cancelled`, and so on
+
+## W3C TraceContext propagation
+
+Sentry SDKs add two HTTP headers to outgoing requests:
+
+| Header | Purpose |
+|---|---|
+| `traceparent` | Carries `trace_id`, `span_id`, and sampling flag |
+| `baggage` | Carries Sentry-specific metadata such as `sentry-trace_id`, `sentry-sampled`, and `sentry-transaction` |
+
+Downstream services that also run a Sentry SDK automatically pick up these headers and continue the trace.
+
+## Sampling
+
+### Head-based sampling
+
+Head-based sampling makes the retain/drop decision at the **start** of a trace, in the first service that processes the request. All downstream services inherit the sampling decision propagated via the `traceparent` header. This guarantees that either the complete trace is captured or none of it is.
+
+```python
+sentry_sdk.init(
+    dsn="...",
+    traces_sample_rate=0.1,  # keep 10% of traces
+)
+```
+
+### Tail-based sampling (Dynamic Sampling)
+
+With **Dynamic Sampling**, Sentry can adjust retention after the trace is complete. The system inspects the finished trace and applies rules:
+
+- Traces containing errors are retained at a higher rate.
+- Traces from new or rare transactions are given higher priority.
+- High-volume, repetitive healthy traces are down-sampled.
+
+Dynamic Sampling happens server-side and does not require SDK changes.
+
+## Trace Explorer
+
+The **Trace Explorer** lets you search across all spans in your traces using a query language. You can:
+
+- Filter by span `op`, `description`, status, or any tag
+- Use aggregate functions: `p95(span.duration)`, `count()`, `sum(span.self_time)`
+- Group results by any attribute
+- Save queries for reuse
+
+## Trace details view
+
+Clicking on any transaction or span opens the **Trace Details** view, which renders the full span waterfall for the trace:
+
+- Colored bars representing each span's start time and duration
+- Parent–child relationships visible as indentation
+- Color coding for span categories (DB, HTTP, cache, etc.)
+- Error indicators on spans that generated exceptions
+- Links to the associated issues and profiles
+
+## Cross-service trace correlation
+
+When multiple services share the same `trace_id`, Sentry links them in the UI. You can jump from a slow database span in a Python service to the originating HTTP call in a Node.js frontend within the same trace.
+
+<Note>
+For cross-service tracing to work, all services must have the same Sentry organization configured and must be running a Sentry SDK with tracing enabled. Verify that `traces_propagation_targets` is configured correctly in each SDK to control which outgoing requests receive trace headers.
+</Note>

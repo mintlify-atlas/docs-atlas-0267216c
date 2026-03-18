@@ -1,0 +1,84 @@
+---
+title: Events and issues
+description: Introduction to the Sentry Events API, including raw events, issues, pagination, and error handling.
+---
+
+The Events API gives you access to two related but distinct concepts in Sentry:
+
+<CardGroup cols={2}>
+  <Card title="Raw events" icon="bolt">
+    Individual event payloads captured by the SDK. Each event contains a full stack trace, context, tags, and user information. Events are the atomic unit of data in Sentry.
+  </Card>
+  <Card title="Issues (groups)" icon="circle-dot">
+    Aggregations of events that share the same root cause (same fingerprint). Issues expose aggregate data like total counts, first seen, last seen, and affected users.
+  </Card>
+</CardGroup>
+
+## Key concepts
+
+### Events vs. issues
+
+When your application sends an error to Sentry, a raw **event** is stored. Sentry then groups events with the same fingerprint into an **issue** (also called a group). The Issues API lets you work with these aggregations — resolving them, assigning them, and querying across your organization. The Events API gives you access to the underlying individual event payloads.
+
+### Discover queries
+
+The [events query endpoint](/api/events/queries) (`GET /api/0/organizations/{org}/events/`) supports Discover-style field selection and aggregations. Use this endpoint when you need to query events with custom fields, aggregations, or conditions across multiple projects.
+
+## Pagination
+
+List endpoints return paginated results using **cursor-based pagination**. The `Link` response header contains cursors for the next and previous pages:
+
+```
+Link: <https://sentry.io/api/0/organizations/my-org/issues/?cursor=0:25:0>; rel="next"; results="true"; cursor="0:25:0",
+      <https://sentry.io/api/0/organizations/my-org/issues/?cursor=0:0:1>; rel="previous"; results="false"; cursor="0:0:1"
+```
+
+Pass the `cursor` value as a query parameter to navigate to the next or previous page:
+
+```bash
+curl "https://sentry.io/api/0/organizations/my-org/issues/?cursor=0:25:0" \
+  -H "Authorization: Bearer <token>"
+```
+
+When `results="false"` for the `next` cursor, you have reached the last page.
+
+## Rate limits
+
+Event and issue endpoints are subject to the standard Sentry API rate limits. When you exceed the limit, the API returns `429 Too Many Requests`. Check the `Retry-After` response header for the number of seconds to wait before retrying.
+
+Read [Authentication](/api/authentication#rate-limiting) for details on rate limit headers.
+
+## Error responses
+
+| Status code | Meaning |
+|---|---|
+| `400 Bad Request` | Your request body or query parameters are invalid |
+| `401 Unauthorized` | No token provided or the token is invalid |
+| `403 Forbidden` | Your token does not have the required scope |
+| `404 Not Found` | The requested resource does not exist |
+| `429 Too Many Requests` | Rate limit exceeded |
+
+Error responses include a JSON body with a `detail` field explaining the error:
+
+```json
+{
+  "detail": "You do not have permission to perform this action."
+}
+```
+
+## Available endpoints
+
+<CardGroup cols={2}>
+  <Card title="Event queries" icon="magnifying-glass" href="/api/events/queries">
+    Query events with Discover-style field selection, filtering, and aggregations.
+  </Card>
+  <Card title="Event stats" icon="chart-line" href="/api/events/stats">
+    Retrieve time-series event statistics for charts and dashboards.
+  </Card>
+  <Card title="Issues" icon="circle-dot" href="/api/projects/issues">
+    List, update, and delete issues across your organization.
+  </Card>
+  <Card title="Raw events" icon="bolt" href="/api/projects/events">
+    Retrieve full event payloads including stack traces and context.
+  </Card>
+</CardGroup>

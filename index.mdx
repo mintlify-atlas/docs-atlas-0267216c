@@ -1,97 +1,63 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
+title: "Sentry Documentation"
+description: "Developer-first error tracking and performance monitoring. Detect, trace, and fix issues faster."
 ---
 
-## Setting up
-
-Get your documentation site up and running in minutes.
-
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
-
-## Make it yours
-
-Design a docs site that looks great and empowers your users.
-
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Get up and running with Sentry in minutes. Connect your first project and start capturing errors.
   </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
+  <Card title="Features" icon="star" href="/features/issues">
+    Explore error monitoring, performance tracing, session replays, and more.
   </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
+  <Card title="Integrations" icon="plug" href="/integrations/github">
+    Connect Sentry with GitHub, Jira, Slack, and dozens of other tools your team uses.
   </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
+  <Card title="API Reference" icon="code" href="/api/authentication">
+    Automate workflows and build on top of Sentry using the REST API.
   </Card>
-</Columns>
+</CardGroup>
 
-## Create beautiful pages
+## What is Sentry?
 
-Everything you need to create world-class documentation.
+Sentry is a developer-first **error tracking and performance monitoring** platform. It captures unhandled exceptions, traces slow transactions, records session replays, and surfaces the root cause of issues — so you can fix bugs faster and ship with confidence.
 
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
-  </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
-  </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
-  </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
-  </Card>
-</Columns>
+## Key capabilities
 
-## Need inspiration?
+<CardGroup cols={3}>
+  <Card title="Error Monitoring" icon="bug">
+    Capture and triage every unhandled error with intelligent deduplication and full stack traces.
+  </Card>
+  <Card title="Performance Monitoring" icon="gauge">
+    Measure transaction latency, database query performance, and frontend Web Vitals in real time.
+  </Card>
+  <Card title="Distributed Tracing" icon="diagram-project">
+    Follow a request across microservices with full end-to-end traces and span-level visibility.
+  </Card>
+  <Card title="Session Replays" icon="video">
+    Replay exactly what a user experienced before an error.
+  </Card>
+  <Card title="Profiling" icon="chart-line">
+    Find performance bottlenecks at the function level with continuous profiling.
+  </Card>
+  <Card title="Crons and Uptime" icon="clock">
+    Monitor scheduled jobs and external endpoints continuously.
+  </Card>
+</CardGroup>
 
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Create your first project" icon="folder-plus" href="/quickstart">
+    Follow the quickstart to instrument your app and see your first error in Sentry.
+  </Card>
+  <Card title="Set up alerts" icon="bell" href="/features/alerts">
+    Configure alert rules so your team is notified when things break.
+  </Card>
+  <Card title="Understand core concepts" icon="book" href="/concepts/projects">
+    Learn about projects, organizations, environments, and releases.
+  </Card>
+  <Card title="Self-host Sentry" icon="server" href="/self-hosted/installation">
+    Run Sentry on your own infrastructure using Docker Compose.
+  </Card>
+</CardGroup>

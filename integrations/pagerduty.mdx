@@ -1,0 +1,94 @@
+---
+title: PagerDuty
+description: Route Sentry alerts to PagerDuty to trigger incidents, with severity mapping and multi-service support.
+---
+
+The PagerDuty integration connects your Sentry organization to one or more PagerDuty accounts. It lets you trigger PagerDuty incidents from Sentry alert rules, with automatic severity mapping based on the event level.
+
+## Features
+
+<CardGroup cols={2}>
+  <Card title="Incident triggering" icon="siren">
+    Trigger PagerDuty incidents from Sentry issue and metric alerts.
+  </Card>
+  <Card title="Severity mapping" icon="bar-chart">
+    Sentry event levels map automatically to PagerDuty severity levels.
+  </Card>
+  <Card title="Multi-service support" icon="layers">
+    Connect multiple PagerDuty services to a single Sentry organization and route alerts to the appropriate service.
+  </Card>
+  <Card title="Alert rule actions" icon="bell">
+    Use alert rule conditions to control exactly when and which PagerDuty service is notified.
+  </Card>
+</CardGroup>
+
+## Severity mapping
+
+Sentry maps its event levels to PagerDuty severity levels as follows:
+
+| Sentry level | PagerDuty severity |
+|---|---|
+| `debug` | `info` |
+| `info` | `info` |
+| `warning` | `warning` |
+| `error` | `error` |
+| `fatal` | `critical` |
+
+When no level is set, the default severity is used. You can also override the severity in the alert rule action.
+
+## Installation
+
+<Steps>
+  <Step title="Start installation from Sentry">
+    In Sentry, go to **Settings > Integrations** and find **PagerDuty** in the Notifications group. Click **Install**.
+  </Step>
+  <Step title="Authorize in PagerDuty">
+    Sentry redirects you to your PagerDuty account to install the Sentry integration. Sign in, select the account, and approve access.
+  </Step>
+  <Step title="Select services">
+    PagerDuty prompts you to choose which services should receive events from Sentry. Select one or more services and complete the setup.
+  </Step>
+  <Step title="Confirm in Sentry">
+    Sentry redirects you back after setup. The configured PagerDuty services appear in **Settings > Integrations > PagerDuty**.
+  </Step>
+</Steps>
+
+<Note>
+The PagerDuty integration adds a new alert rule action to all projects. To start sending incidents to PagerDuty, you must create an alert rule with the PagerDuty action enabled.
+</Note>
+
+## Managing services
+
+After installation, you can add, update, or remove PagerDuty services from the integration settings:
+
+1. Go to **Settings > Integrations > PagerDuty > Configure**.
+2. The service table shows all connected PagerDuty services and their integration keys.
+3. Click **Add** to add a service manually by entering its name and PagerDuty integration key.
+4. Click the delete icon to remove a service. Any alert rules using the removed service will show it as `removed`.
+
+<Warning>
+Deleting a service from the integration settings does not delete it from PagerDuty. It only removes the connection in Sentry. Alert rules associated with the deleted service will stop working.
+</Warning>
+
+## Setting up alert rule actions
+
+<Steps>
+  <Step title="Open alert rules">
+    Go to **Alerts > Alert Rules** and create or edit a rule.
+  </Step>
+  <Step title="Add a PagerDuty action">
+    Under **Then perform these actions**, click **Add action** and select **Send a PagerDuty notification**.
+  </Step>
+  <Step title="Configure the action">
+    Select the PagerDuty account and the service to trigger. Optionally set a custom severity level.
+  </Step>
+  <Step title="Save the rule">
+    Save the alert rule. Sentry will trigger a PagerDuty incident whenever the rule conditions are met.
+  </Step>
+</Steps>
+
+## Integration key
+
+Each PagerDuty service connected to Sentry has a unique integration key (also called a routing key). Sentry uses this key to send events to the correct service via the PagerDuty Events API v2.
+
+You can find and update integration keys in **Settings > Integrations > PagerDuty > Configure**.

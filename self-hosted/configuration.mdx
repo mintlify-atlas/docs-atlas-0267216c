@@ -1,0 +1,235 @@
+---
+title: Configuration
+description: Configure your self-hosted Sentry instance using environment variables and config files.
+---
+
+Self-hosted Sentry supports two layers of configuration:
+
+1. **Environment variables** in the `.env` file — for secrets and infrastructure settings
+2. **`sentry.conf.py`** — a Python file for Django-level overrides
+3. **`config.yml`** — a YAML file for Sentry-specific option overrides
+
+All three files live in the `self-hosted` directory after installation.
+
+## Environment variables
+
+The `.env` file is the primary place to configure your instance. Sentry reads these variables at startup.
+
+### Secret key
+
+```bash
+SENTRY_SECRET_KEY=your-very-long-random-secret-key
+```
+
+This key signs sessions and other security-sensitive data. It must be at least 32 characters. Generate a new one with:
+
+```bash
+docker compose run --rm web generate-secret-key
+```
+
+<Warning>
+  Changing `SENTRY_SECRET_KEY` invalidates all active user sessions. Rotate it carefully and make sure all users are aware they'll need to log in again.
+</Warning>
+
+### Database (PostgreSQL)
+
+```bash
+SENTRY_POSTGRES_HOST=postgres
+SENTRY_POSTGRES_PORT=5432
+SENTRY_DB_NAME=postgres
+SENTRY_DB_USER=postgres
+SENTRY_DB_PASSWORD=
+```
+
+By default, the bundled PostgreSQL container is used. To use an external PostgreSQL instance, set these variables to point to it.
+
+### Redis
+
+```bash
+SENTRY_REDIS_HOST=redis
+SENTRY_REDIS_PORT=6379
+SENTRY_REDIS_PASSWORD=
+SENTRY_REDIS_DB=0
+```
+
+Redis is required — Sentry uses it for caching, rate limiting, buffers, queues, and digests. If `SENTRY_REDIS_HOST` is not set, Sentry will fail to start.
+
+### Email (SMTP)
+
+```bash
+SENTRY_EMAIL_HOST=smtp.example.com
+SENTRY_EMAIL_PORT=25
+SENTRY_EMAIL_USER=
+SENTRY_EMAIL_PASSWORD=
+SENTRY_EMAIL_USE_TLS=false
+SENTRY_EMAIL_USE_SSL=false
+SENTRY_SERVER_EMAIL=sentry@example.com
+```
+
+If `SENTRY_EMAIL_HOST` is not set, Sentry uses a dummy mail backend and no emails are sent.
+
+### File storage
+
+By default, Sentry stores uploaded files (attachments, debug symbols, release artifacts) on the local filesystem at `/data/files` inside the container.
+
+```bash
+SENTRY_FILESTORE_DIR=/data/files
+```
+
+To use S3-compatible storage instead, configure it in `config.yml` (see below).
+
+### Single organization mode
+
+```bash
+SENTRY_SINGLE_ORGANIZATION=true
+```
+
+Set to `true` to enable single-organization mode, which is the recommended setting for most self-hosted deployments. This enables several UI optimizations for single-tenant installs.
+
+### Mailgun (inbound email replies)
+
+If you want to enable inbound email replies using Mailgun:
+
+```bash
+SENTRY_MAILGUN_API_KEY=your-mailgun-api-key
+SENTRY_ENABLE_EMAIL_REPLIES=true
+SENTRY_SMTP_HOSTNAME=your-reply-hostname
+```
+
+### Memcached (optional)
+
+Memcached is an optional secondary cache layer. If configured, Sentry uses it to optimize high-throughput access patterns.
+
+```bash
+SENTRY_MEMCACHED_HOST=memcached
+SENTRY_MEMCACHED_PORT=11211
+```
+
+## config.yml
+
+The `config.yml` file lets you set Sentry-specific options that are not exposed as environment variables. Key settings:
+
+### Mail server
+
+```yaml
+mail.backend: 'smtp'
+mail.host: 'smtp.example.com'
+mail.port: 25
+mail.username: ''
+mail.password: ''
+mail.use-tls: false
+mail.use-ssl: false
+mail.from: 'sentry@example.com'
+```
+
+### File storage
+
+<Tabs>
+  <Tab title="Local filesystem">
+    ```yaml
+    filestore.backend: 'filesystem'
+    filestore.options:
+      location: '/data/files'
+    dsym.cache-path: '/data/dsym-cache'
+    releasefile.cache-path: '/data/releasefile-cache'
+    ```
+  </Tab>
+  <Tab title="S3-compatible">
+    ```yaml
+    filestore.backend: 's3'
+    filestore.options:
+      access_key: 'AKIXXXXXX'
+      secret_key: 'XXXXXXX'
+      bucket_name: 'your-s3-bucket-name'
+    ```
+
+    Any S3-compatible storage service (AWS S3, MinIO, GCS with S3 compatibility) is supported. When using S3-compatible storage, the provider handles data durability — you don't need to back up the file store separately.
+  </Tab>
+</Tabs>
+
+### Redis clusters
+
+```yaml
+redis.clusters:
+  default:
+    hosts:
+      0:
+        host: 127.0.0.1
+        port: 6379
+```
+
+### Secret key
+
+You can also set the secret key in `config.yml` instead of as an environment variable:
+
+```yaml
+system.secret-key: 'your-secret-key-here'
+```
+
+## sentry.conf.py
+
+For Django-level overrides that can't be expressed via environment variables or `config.yml`, edit `sentry.conf.py`. This is a standard Python/Django settings file.
+
+Common use cases:
+
+### Allowed hosts
+
+```python
+ALLOWED_HOSTS = ['sentry.example.com']
+```
+
+### Reverse proxy with SSL termination
+
+If Sentry sits behind a reverse proxy that terminates SSL:
+
+```python
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+```
+
+### Web server workers
+
+Tune the number of web workers (defaults to a value based on CPU count):
+
+```python
+SENTRY_WEB_OPTIONS = {
+    'workers': 3,
+}
+```
+
+### Telemetry (beacon)
+
+Sentry sends anonymous usage data to help improve the product. To disable this:
+
+```python
+SENTRY_BEACON = False
+```
+
+## External services
+
+Self-hosted Sentry depends on the following external services:
+
+| Service | Purpose |
+| --- | --- |
+| **PostgreSQL** | Primary database — stores all Sentry data |
+| **Redis** | Caching, queuing, rate limiting, buffers |
+| **Kafka** | Message bus for event ingestion pipeline |
+| **ClickHouse** (via Snuba) | Event storage and aggregation queries |
+| **Relay** | Event ingestion and filtering |
+
+All of these are included in the Docker Compose stack provided by `getsentry/self-hosted`. If you want to use externally managed versions of any service (for example, a managed PostgreSQL database), update the relevant environment variables to point to your external endpoints.
+
+## Applying configuration changes
+
+After editing `.env`, `config.yml`, or `sentry.conf.py`, restart all services to apply the changes:
+
+```bash
+docker compose restart
+```
+
+For changes to environment variables, a full stop and start is more reliable:
+
+```bash
+docker compose down && docker compose up -d
+```

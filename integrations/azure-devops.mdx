@@ -1,0 +1,128 @@
+---
+title: Azure DevOps
+description: Connect Sentry to Azure DevOps to track commits, create work items, sync status bidirectionally, and link stack traces to source code.
+---
+
+The Azure DevOps integration (formerly VSTS) connects your Sentry organization to one or more Azure DevOps organizations. It enables commit tracking, work item creation, two-way issue sync, stack trace linking, and code owners.
+
+## Features
+
+<CardGroup cols={2}>
+  <Card title="Commit tracking" icon="git-commit">
+    Track commits and releases to identify the changes that introduced an error.
+  </Card>
+  <Card title="Work item creation" icon="ticket">
+    Create Azure DevOps work items from Sentry issues and navigate between them.
+  </Card>
+  <Card title="Two-way sync" icon="arrow-left-right">
+    Resolving a work item in Azure DevOps resolves the linked Sentry issue, and vice versa. Assignees and comments sync bidirectionally.
+  </Card>
+  <Card title="Stack trace linking" icon="code">
+    Navigate from a stack frame directly to the corresponding line in your Azure DevOps repository.
+  </Card>
+  <Card title="Code owners" icon="users">
+    Import your codeowners file to auto-assign Sentry issues to the right team.
+  </Card>
+  <Card title="Alert rule actions" icon="bell">
+    Automatically create work items when an issue alert fires.
+  </Card>
+</CardGroup>
+
+## Installation
+
+<Steps>
+  <Step title="Navigate to integrations">
+    In Sentry, go to **Settings > Integrations** and find **Azure DevOps** in the Source Control group. Click **Install**.
+  </Step>
+  <Step title="Authorize with Microsoft">
+    Sentry redirects you to Microsoft to authorize access. Sign in with the account that has admin access to the Azure DevOps organization you want to connect.
+  </Step>
+  <Step title="Select your organization">
+    After authorization, select the Azure DevOps organization to connect to your Sentry organization.
+  </Step>
+  <Step title="Select repositories">
+    Choose the Azure Repos repositories to link to your Sentry projects for commit tracking.
+  </Step>
+</Steps>
+
+## Commit tracking
+
+Once repositories are connected, Sentry associates commits from your Azure Repos with Sentry releases. This enables:
+
+- Suspect commits highlighted on the issue detail page
+- Release commit lists in the Releases section
+- Auto-resolving issues via commit messages (`Fixes PROJ-123`)
+
+## Work item creation and linking
+
+### Create a new work item
+
+1. Open a Sentry issue.
+2. In the **Linked Issues** sidebar section, click **Link an Azure DevOps work item**.
+3. Select **Create new work item** and fill in:
+   - **Project**: The Azure DevOps project.
+   - **Work item type**: Bug, Task, User Story, and so on.
+   - **Title**: Pre-filled from the Sentry issue title.
+4. Click **Save**.
+
+### Link an existing work item
+
+1. Open a Sentry issue.
+2. In the **Linked Issues** sidebar section, click **Link an Azure DevOps work item**.
+3. Select **Link existing work item** and search by title or ID.
+4. Select the item and click **Save**.
+
+## Two-way sync
+
+To configure sync, go to **Settings > Integrations > Azure DevOps > Configure**:
+
+| Option | Description |
+|---|---|
+| Sync Azure DevOps status to Sentry | Resolving a work item in Azure DevOps resolves the linked Sentry issue. |
+| Sync Sentry status to Azure DevOps | Resolving a Sentry issue transitions the linked work item to the configured state. |
+| Sync assignees | Assigning in Sentry assigns the linked work item, and vice versa. |
+| Sync comments | Comments on Sentry issues are posted to linked work items. |
+
+### Project status mapping
+
+For status sync, map each Azure DevOps project to Sentry and define which work item state corresponds to resolved:
+
+1. In the Azure DevOps integration settings, click **Add Azure DevOps project mapping**.
+2. Select the Azure DevOps project.
+3. Choose the work item state that means **resolved** and the state that means **unresolved**.
+
+## Alert rule actions
+
+With the Azure DevOps integration installed, you can add a **Create an Azure DevOps work item** action to your issue alert rules.
+
+<Steps>
+  <Step title="Open your alert rule">
+    Go to **Alerts > Alert Rules** and create or edit a rule.
+  </Step>
+  <Step title="Add the Azure DevOps action">
+    Under **Then perform these actions**, click **Add action** and select **Azure DevOps**.
+  </Step>
+  <Step title="Configure the work item fields">
+    Select the project and work item type, then configure any additional fields.
+  </Step>
+</Steps>
+
+## Stack trace linking
+
+Stack trace linking maps stack frames to lines in your Azure Repos repositories. For linking to work, your project needs a connected repository and release commits tracked.
+
+## Code owners
+
+Sentry can import codeowners data from Azure Repos and use it to assign issues.
+
+<Steps>
+  <Step title="Go to your project settings">
+    Navigate to **Settings > Projects > [your project] > Code Owners**.
+  </Step>
+  <Step title="Sync the CODEOWNERS file">
+    Click **Sync CODEOWNERS** to fetch the file from the linked repository.
+  </Step>
+  <Step title="Map Azure DevOps users to Sentry users">
+    Map Azure DevOps user accounts to Sentry members to enable auto-assignment.
+  </Step>
+</Steps>

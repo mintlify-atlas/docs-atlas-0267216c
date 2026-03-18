@@ -1,0 +1,108 @@
+---
+title: API tokens
+description: Create and manage User Auth Tokens and Internal Integration tokens to authenticate Sentry API requests.
+---
+
+API tokens authenticate your requests to the Sentry REST API. There are two kinds of tokens depending on your use case.
+
+## User auth tokens
+
+User auth tokens are tied to your personal Sentry account. Any API call made with a user auth token acts with the same permissions you have in Sentry.
+
+### Creating a user auth token
+
+<Steps>
+  <Step title="Open auth token settings">
+    Go to **Settings > Auth Tokens** in the Sentry web UI, or navigate directly to [sentry.io/settings/auth-tokens/](https://sentry.io/settings/auth-tokens/).
+  </Step>
+  <Step title="Create a new token">
+    Click **Create New Token**. Give the token a descriptive name so you can identify it later.
+  </Step>
+  <Step title="Select scopes">
+    Choose the minimum scopes your integration needs. You cannot add scopes to a token after it is created.
+  </Step>
+  <Step title="Save the token">
+    Copy the token value immediately — Sentry only shows it once. Store it securely.
+  </Step>
+</Steps>
+
+User auth tokens are prefixed with `sntrys_`.
+
+## Internal integration tokens
+
+Internal integration tokens are scoped to an **organization** rather than a personal account. They are ideal for automated workflows, CI/CD pipelines, and server-to-server integrations that should not depend on any individual user's account.
+
+### Creating an internal integration token
+
+<Steps>
+  <Step title="Open integrations settings">
+    Go to **Settings > Developer Settings > Internal Integrations** for your organization.
+  </Step>
+  <Step title="Create an integration">
+    Click **Create New Integration**. Give the integration a name and description.
+  </Step>
+  <Step title="Configure permissions">
+    Set the permissions (scopes) the integration requires. These are equivalent to the token scopes described below.
+  </Step>
+  <Step title="Install the integration">
+    Save the integration. Sentry generates a token automatically on installation.
+  </Step>
+  <Step title="Copy the token">
+    Copy the token from the integration details page. Store it securely.
+  </Step>
+</Steps>
+
+## Token scopes
+
+Each token is granted one or more scopes. A token can only perform operations allowed by its scopes.
+
+| Scope | What it allows |
+|---|---|
+| `org:read` | List organizations, view members, and read organization settings |
+| `org:write` | Update organization settings and configuration |
+| `org:admin` | Full organization administration, including deletion |
+| `project:read` | View projects and their configuration |
+| `project:write` | Create projects and update their settings |
+| `project:admin` | Delete projects and manage DSN keys |
+| `project:releases` | Create releases, upload source maps, and create deploys |
+| `team:read` | View teams and team membership |
+| `team:write` | Create teams and add or remove members |
+| `team:admin` | Delete teams |
+| `event:read` | View issues and raw events |
+| `event:write` | Update issue status, assignee, and other attributes |
+| `event:admin` | Delete issues and events |
+| `member:read` | View organization members and their roles |
+| `member:write` | Invite members and change member roles |
+| `alerts:read` | View alert rules |
+| `alerts:write` | Create, update, and delete alert rules |
+
+## Revoking tokens
+
+**User auth tokens:** Go to **Settings > Auth Tokens**, find the token, and click **Revoke**.
+
+**Internal integration tokens:** Go to **Settings > Developer Settings > Internal Integrations**, open the integration, and revoke or rotate the token from there.
+
+Revoking a token immediately invalidates it. Any API call using a revoked token receives a `401 Unauthorized` response.
+
+## Security best practices
+
+<Warning>
+Never commit tokens to source control. If you accidentally expose a token, revoke it immediately and generate a new one.
+</Warning>
+
+- Store tokens in environment variables or a secrets manager (such as AWS Secrets Manager, HashiCorp Vault, or GitHub Actions secrets).
+- Grant the minimum scopes required — avoid using `org:admin` when `org:read` is sufficient.
+- Use internal integration tokens for automation rather than personal user auth tokens, so access is not tied to any one person's account.
+- Rotate tokens periodically and after team member offboarding.
+- Audit active tokens regularly in **Settings > Auth Tokens** and remove any that are no longer needed.
+
+### Using a token in your environment
+
+```bash
+# Store the token in your environment
+export SENTRY_AUTH_TOKEN=sntrys_YOUR_TOKEN_HERE
+
+# Use it in curl requests
+curl https://sentry.io/api/0/organizations/ \
+  -H "Authorization: Bearer $SENTRY_AUTH_TOKEN"
+```

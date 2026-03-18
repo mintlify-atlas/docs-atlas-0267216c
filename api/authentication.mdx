@@ -1,0 +1,113 @@
+---
+title: Authentication
+description: Learn how to authenticate requests to the Sentry API using bearer tokens and DSN credentials.
+---
+
+The Sentry API uses token-based authentication for all requests. Every request to a protected endpoint must include a valid token in the `Authorization` header.
+
+## Bearer token authentication
+
+Pass your token as a bearer token in the `Authorization` header:
+
+```bash
+Authorization: Bearer <your-token>
+```
+
+Here is a complete example using `curl`:
+
+```bash
+curl https://sentry.io/api/0/organizations/ \
+  -H "Authorization: Bearer sntrys_YOUR_TOKEN_HERE"
+```
+
+## Token types
+
+Sentry supports two types of API tokens:
+
+<CardGroup cols={2}>
+  <Card title="User auth tokens" icon="user">
+    Tokens scoped to your personal Sentry account. Use these for scripts and integrations that act on your behalf.
+  </Card>
+  <Card title="Internal integration tokens" icon="building">
+    Tokens scoped to an organization. Use these for server-to-server integrations and automation workflows that act on behalf of the org.
+  </Card>
+</CardGroup>
+
+See [API tokens](/api/api-tokens) for details on creating and managing each token type.
+
+## DSN authentication
+
+DSN (Data Source Name) authentication is used exclusively for **event ingestion** — sending errors, transactions, and other events to Sentry from your application code via a Sentry SDK. It is distinct from the API authentication described on this page and is not used to call the REST API.
+
+Your DSN looks like this:
+
+```
+https://<public-key>@o<org-id>.ingest.sentry.io/<project-id>
+```
+
+You configure the DSN in your Sentry SDK initialization. Do not use DSN credentials to authenticate REST API calls.
+
+## Scopes
+
+Tokens are granted one or more **scopes** that control which API operations they can perform. Always request the minimum scopes your integration needs.
+
+| Scope | Description |
+|---|---|
+| `org:read` | Read organization data, members, and settings |
+| `org:write` | Modify organization settings and configuration |
+| `org:admin` | Full administrative access to the organization |
+| `project:read` | Read project data and configuration |
+| `project:write` | Create and modify projects |
+| `project:admin` | Delete projects and manage project keys |
+| `project:releases` | Create and manage releases and deploys |
+| `team:read` | Read team membership and settings |
+| `team:write` | Create and modify teams |
+| `team:admin` | Delete teams |
+| `event:read` | Read issues and events |
+| `event:write` | Update and resolve issues |
+| `event:admin` | Delete issues and events |
+| `member:read` | Read organization member data |
+| `member:write` | Invite and manage organization members |
+| `alerts:read` | Read alert rules |
+| `alerts:write` | Create and modify alert rules |
+
+## Rate limiting
+
+The Sentry API enforces rate limits to protect service availability. Rate limit information is returned in response headers:
+
+| Header | Description |
+|---|---|
+| `X-Sentry-Rate-Limit-Limit` | Maximum number of requests per window |
+| `X-Sentry-Rate-Limit-Remaining` | Requests remaining in the current window |
+| `X-Sentry-Rate-Limit-Reset` | Unix timestamp when the window resets |
+
+When you exceed the rate limit, the API returns a `429 Too Many Requests` response. Your client should back off and retry after the time indicated in the `Retry-After` header.
+
+## Authentication errors
+
+| Status code | Meaning |
+|---|---|
+| `401 Unauthorized` | No token provided or token is invalid |
+| `403 Forbidden` | Token is valid but lacks the required scope |
+
+### Example error response
+
+```json
+{
+  "detail": "Authentication credentials were not provided."
+}
+```
+
+## API base URL
+
+All Sentry API requests use the following base URL:
+
+```
+https://sentry.io/api/0/
+```
+
+If your organization is on the EU data region, use:
+
+```
+https://de.sentry.io/api/0/
+```

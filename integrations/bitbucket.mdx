@@ -1,0 +1,97 @@
+---
+title: Bitbucket
+description: Connect Sentry to Bitbucket to track suspect commits, link issues, and map stack traces back to source code.
+---
+
+The Bitbucket integration connects your Sentry organization to Bitbucket, enabling commit tracking, issue linking, stack trace linking, and code owners.
+
+## Features
+
+<CardGroup cols={2}>
+  <Card title="Suspect commits" icon="git-commit">
+    Sentry identifies the Bitbucket commits most likely to have introduced an error.
+  </Card>
+  <Card title="Stack trace linking" icon="code">
+    Navigate from a stack frame directly to the corresponding line in your Bitbucket repository.
+  </Card>
+  <Card title="Issue linking" icon="link">
+    Create or link Bitbucket issues directly from a Sentry issue.
+  </Card>
+  <Card title="Code owners" icon="users">
+    Import your `CODEOWNERS` file to automatically assign Sentry issues.
+  </Card>
+  <Card title="Auto-resolve via commit" icon="check-circle">
+    Include `Fixes PROJ-ID` in a commit message to resolve the linked Sentry issue automatically.
+  </Card>
+</CardGroup>
+
+## Installation
+
+<Steps>
+  <Step title="Navigate to integrations">
+    In Sentry, go to **Settings > Integrations** and find **Bitbucket** in the Source Control group. Click **Install**.
+  </Step>
+  <Step title="Authorize with Bitbucket">
+    Sentry redirects you to Bitbucket to complete the OAuth flow. Sign in with the Bitbucket account that has admin access to the workspace you want to connect.
+  </Step>
+  <Step title="Select repositories">
+    After authorization, choose the Bitbucket repositories to link to your Sentry projects.
+  </Step>
+</Steps>
+
+<Note>
+Bitbucket Server (self-hosted) is supported through the separate **Bitbucket Server** integration, which uses a different OAuth configuration. The Bitbucket integration described on this page is for Bitbucket Cloud only.
+</Note>
+
+## Bitbucket Server (self-hosted)
+
+For self-managed Bitbucket Server instances, use the **Bitbucket Server** integration instead. It requires you to create an application link in Bitbucket Server and provide the base URL and credentials during setup.
+
+To install the Bitbucket Server integration:
+
+<Steps>
+  <Step title="Navigate to integrations">
+    Go to **Settings > Integrations** and find **Bitbucket Server**. Click **Install**.
+  </Step>
+  <Step title="Enter your server URL">
+    Provide the base URL of your Bitbucket Server instance, for example `https://bitbucket.example.com`.
+  </Step>
+  <Step title="Create an application link in Bitbucket Server">
+    Follow the on-screen instructions to create an application link in your Bitbucket Server instance and paste the generated consumer key and secret into Sentry.
+  </Step>
+  <Step title="Authorize via OAuth">
+    Sentry redirects you to Bitbucket Server to complete the authorization.
+  </Step>
+</Steps>
+
+## Issue linking
+
+1. Open a Sentry issue.
+2. In the **Linked Issues** sidebar section, click **Link a Bitbucket issue**.
+3. Search for an existing issue or fill in the form to create a new one.
+
+## Code owners
+
+Sentry can import your Bitbucket `CODEOWNERS` file and use it to assign issues automatically.
+
+<Steps>
+  <Step title="Go to your project settings">
+    Navigate to **Settings > Projects > [your project] > Code Owners**.
+  </Step>
+  <Step title="Sync the CODEOWNERS file">
+    Click **Sync CODEOWNERS**. Sentry fetches the file from the default branch of the linked repository.
+  </Step>
+  <Step title="Map Bitbucket users to Sentry users">
+    Sentry prompts you to map Bitbucket user accounts to Sentry members to enable auto-assignment.
+  </Step>
+</Steps>
+
+## Auto-resolve via commit message
+
+You can resolve a Sentry issue by including a reference in a Bitbucket commit message:
+
+```
+Fixes PROJ-123
+```
+
+Replace `PROJ-123` with the short ID of the Sentry issue. When the commit is pushed to the default branch, Sentry resolves the issue automatically.

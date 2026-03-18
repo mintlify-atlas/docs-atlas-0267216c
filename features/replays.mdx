@@ -1,0 +1,111 @@
+---
+title: Session Replay
+description: Record and replay user sessions to reproduce bugs and understand how users experience your application.
+---
+
+Session Replay records DOM mutations, user interactions, network activity, and console output during a user's session. When something goes wrong, you can watch exactly what the user did and saw rather than reconstructing the scenario from logs.
+
+## What gets recorded
+
+The Sentry SDK captures a compressed, privacy-controlled recording of the user's browser session:
+
+| Signal | Details |
+|---|---|
+| **DOM mutations** | Every addition, removal, and attribute change to the page's DOM, reconstructed as an rrweb recording |
+| **User interactions** | Clicks, taps, form inputs, scrolls, and keyboard events |
+| **Network requests** | Outgoing fetch/XHR requests with URLs, methods, status codes, and optional request/response bodies |
+| **Console output** | `console.log`, `console.error`, and similar output with log levels |
+| **Navigation events** | Page loads, route changes, and browser history events |
+| **Performance data** | LCP, CLS, and other Web Vitals captured during the replay |
+
+## Privacy controls
+
+Sentry applies several privacy protections by default to prevent capturing sensitive user information:
+
+### Default masking
+
+- All text content is masked (replaced with `*` characters)
+- All input values are masked
+- Images are blocked (replaced with a placeholder)
+
+### Configuration
+
+You can relax or tighten these defaults:
+
+```javascript
+import * as Sentry from "@sentry/browser";
+
+Sentry.init({
+  dsn: "...",
+  integrations: [
+    Sentry.replayIntegration({
+      // unmask text content (use with caution in production)
+      maskAllText: false,
+      // still block all images
+      blockAllMedia: true,
+      // mask specific elements by CSS selector
+      mask: [".credit-card-number"],
+      // block specific elements entirely
+      block: ["#sensitive-form"],
+      // ignore user interactions on certain elements
+      ignore: [".cookie-banner"],
+    }),
+  ],
+});
+```
+
+You can also add `data-sentry-mask` or `data-sentry-block` HTML attributes to individual elements for fine-grained control.
+
+## Sampling
+
+Sentry Replay supports two sampling strategies, which can be used independently or together:
+
+<CardGroup cols={2}>
+  <Card title="Session-based sampling" icon="users">
+    Captures a percentage of all sessions regardless of whether an error occurs. Set `replaysSessionSampleRate` (for example, `0.1` = 10% of sessions).
+  </Card>
+  <Card title="Error-based sampling" icon="triangle-exclamation">
+    Captures the full session buffer whenever an error occurs. Set `replaysOnErrorSampleRate` (for example, `1.0` = 100% of error sessions). The SDK buffers the last 60 seconds of activity so you always get context before the error.
+  </Card>
+</CardGroup>
+
+```javascript
+Sentry.init({
+  dsn: "...",
+  replaysSessionSampleRate: 0.1,   // 10% of all sessions
+  replaysOnErrorSampleRate: 1.0,   // 100% of sessions with errors
+});
+```
+
+## Rage clicks and dead clicks
+
+Sentry detects two user frustration signals in replays:
+
+- **Rage click** — the user clicked the same element rapidly multiple times (indicating frustration with a non-responsive UI)
+- **Dead click** — the user clicked an element that had no visible response (indicating a broken interaction)
+
+These are surfaced as markers on the replay timeline and can be used as search filters.
+
+## Replay list and search
+
+The **Replays** section lets you search and filter recordings by:
+
+- Duration
+- Number of errors in the session
+- Number of rage clicks or dead clicks
+- URL visited
+- User (ID, email, username)
+- Browser, OS, or device
+- Date range
+
+## Linking replays to issues and performance events
+
+When a replay contains an error event, the issue detail page shows a **Linked Replay** section where you can watch the session that produced the error.
+
+Conversely, every replay shows a list of errors that occurred during the session, with links to the corresponding issues.
+
+Replays are also linked to performance transactions when the replay ID is propagated through the trace context.
+
+<Note>
+Replay data is stored separately from error events. The SDK sends replay segments as a compressed binary stream. Sentry stores them as `ReplayRecordingSegment` records associated with a `replay_id` and `project_id`.
+</Note>

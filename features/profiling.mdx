@@ -1,0 +1,100 @@
+---
+title: Profiling
+description: Identify hot code paths and CPU bottlenecks using Sentry's transaction profiling and continuous profiling.
+---
+
+Sentry Profiling captures a call stack sample at a high frequency during transaction execution, giving you a detailed view of where CPU time is actually spent. Unlike traces (which show wall-clock time for instrumented spans), profiling captures every function call — including those you did not explicitly instrument.
+
+## Two profiling modes
+
+<CardGroup cols={2}>
+  <Card title="Transaction profiling" icon="arrow-right-arrow-left">
+    A profile is attached to a sampled transaction. The profile runs for the duration of the transaction and is stored alongside the transaction event. Best for understanding bottlenecks in specific request paths.
+  </Card>
+  <Card title="Continuous profiling" icon="circle-play">
+    The profiler runs in the background at all times, independent of transactions. Data is stored as a series of **profile chunks**. Best for background workers, long-running processes, and cases where transaction boundaries are unclear.
+  </Card>
+</CardGroup>
+
+## Enabling profiling
+
+### Transaction profiling
+
+Set `profiles_sample_rate` alongside `traces_sample_rate`. A profile is only collected when the transaction is also sampled.
+
+<CodeGroup>
+
+```python Python
+import sentry_sdk
+
+sentry_sdk.init(
+    dsn="...",
+    traces_sample_rate=1.0,
+    profiles_sample_rate=1.0,  # profile 100% of sampled transactions
+)
+```
+
+```javascript Node.js
+import * as Sentry from "@sentry/node";
+
+Sentry.init({
+  dsn: "...",
+  tracesSampleRate: 1.0,
+  profilesSampleRate: 1.0,
+});
+```
+
+</CodeGroup>
+
+### Continuous profiling
+
+Start and stop the profiler explicitly, or let it run for the lifetime of the process:
+
+```python
+import sentry_sdk
+from sentry_sdk.profiler import start_profiler, stop_profiler
+
+sentry_sdk.init(dsn="...")
+start_profiler()  # begins continuous profiling
+
+# ... your application runs ...
+
+stop_profiler()  # flush remaining data
+```
+
+## Flame graphs
+
+The **flame graph** is the primary visualization for profile data. Each row represents a stack frame; the width of a frame represents how much time was spent in (and below) that function relative to the total profile duration.
+
+- **Wide frames** at the bottom of a call chain indicate hot paths that dominate CPU time.
+- **Narrow frames** deep in the tree represent infrequent or fast functions.
+- Colors distinguish different threads or call categories.
+
+Sentry also provides a **call tree** view that shows the same data as a hierarchical table sorted by self time or total time.
+
+## Profile details
+
+The profile details page shows:
+
+- The flame graph or call tree for the selected profile
+- **CPU usage** over the profile's time range
+- **Function call frequency** — how often each function appeared in samples
+- Thread selector (for multi-threaded profiles)
+- Links to the associated transaction and trace
+
+## Continuous profiling architecture
+
+Continuous profiles are stored as **profile chunks** — short segments of sampled call stacks (typically 60 seconds each). Each chunk is identified by:
+
+- `project_id`
+- `profiler_id` — unique per process/profiler instance
+- `chunk_id` — unique per segment
+- `start_timestamp` and `end_timestamp`
+
+When you open a flame graph for a time range, Sentry queries the profile chunks storage for chunks matching the time window and profiler ID, then stitches them together into a unified flame graph.
+
+Chunks are stored in ClickHouse via Snuba and can be queried efficiently by `(project_id, profiler_id, start_timestamp, end_timestamp)`.
+
+<Note>
+Continuous profiling is available for Python, Node.js, and mobile SDKs. Check your SDK's documentation for platform-specific setup instructions.
+</Note>

@@ -1,0 +1,122 @@
+---
+title: Environments
+description: Environments let you filter Sentry data by deployment context, such as production, staging, or development.
+---
+
+**Environments** in Sentry are string tags attached to every inbound event. They let you separate production errors from staging noise, scope alert rules to specific deployments, and track release adoption per environment.
+
+## How environments work
+
+When an SDK sends an event, it includes an `environment` field. Sentry stores this value and creates an `Environment` record (scoped to the organization) the first time it sees a new name:
+
+```python
+# src/sentry/models/environment.py
+class Environment(Model):
+    organization_id = BoundedBigIntegerField()
+    projects = models.ManyToManyField("sentry.Project", through=EnvironmentProject)
+    name = models.CharField(max_length=64)
+    date_added = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        unique_together = (("organization_id", "name"),)
+```
+
+Environments are unique per organization, not per project. The same `production` environment record is shared across all projects in an organization.
+
+## Setting the environment in the SDK
+
+Pass the `environment` option when initializing the SDK:
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    import sentry_sdk
+
+    sentry_sdk.init(
+        dsn="https://<public_key>@o<org_id>.ingest.sentry.io/<project_id>",
+        environment="production",  # or "staging", "development", etc.
+    )
+    ```
+  </Tab>
+  <Tab title="JavaScript / Node.js">
+    ```javascript
+    Sentry.init({
+      dsn: "https://<public_key>@o<org_id>.ingest.sentry.io/<project_id>",
+      environment: process.env.NODE_ENV,  // e.g. "production"
+    });
+    ```
+  </Tab>
+  <Tab title="Ruby">
+    ```ruby
+    Sentry.init do |config|
+      config.dsn = "https://<public_key>@o<org_id>.ingest.sentry.io/<project_id>"
+      config.environment = ENV["RAILS_ENV"]
+    end
+    ```
+  </Tab>
+</Tabs>
+
+If you do not set an environment, Sentry stores events without an environment tag. Those events appear when you select **All Environments** in the UI but not when you filter to a specific environment.
+
+## Environment name rules
+
+Environment names are validated against a pattern defined in `sentry.constants.ENVIRONMENT_NAME_PATTERN`. Names must:
+
+- Be 64 characters or fewer
+- Match the allowed character pattern (no null bytes or certain control characters)
+
+```python
+# src/sentry/models/environment.py
+@classmethod
+def is_valid_name(cls, value):
+    if len(value) > ENVIRONMENT_NAME_MAX_LENGTH:
+        return False
+    return OK_NAME_PATTERN.match(value) is not None
+```
+
+Common names: `production`, `staging`, `development`, `testing`, `qa`, `canary`.
+
+## Filtering by environment in the UI
+
+The environment selector appears at the top of most Sentry pages — Issues, Performance, Releases, and Dashboards. Selecting an environment filters all data on the page to events tagged with that environment.
+
+<Tip>
+  You can select multiple environments simultaneously using the environment selector to compare data across deployment stages.
+</Tip>
+
+## Environments and alert rules
+
+Alert rules can be scoped to one or more environments. An issue alert configured for `production` only fires when matching events carry `environment=production`. This prevents staging errors from paging your on-call team.
+
+To scope an alert:
+
+1. Open **Alerts** and create or edit an alert rule.
+2. Under **Environment**, select the environment(s) this rule should apply to.
+
+## Environments and releases
+
+When you deploy a release, you associate it with an environment using sentry-cli or the Releases API:
+
+```bash
+# Deploy a release to the production environment
+sentry-cli releases deploys my-app@1.2.3 new \
+  --env production \
+  --started $(date +%s) \
+  --finished $(date +%s)
+```
+
+Sentry uses this to calculate environment-specific adoption and crash-free rates on the **Releases** page.
+
+## Hiding environments
+
+If an environment accumulates stale data or was created by mistake, you can hide it from the UI. Hidden environments still appear in the `EnvironmentProject` table but are excluded from the environment selector:
+
+```python
+# src/sentry/models/environment.py
+class EnvironmentProject(Model):
+    project = FlexibleForeignKey("sentry.Project")
+    environment = FlexibleForeignKey("sentry.Environment")
+    is_hidden = models.BooleanField(null=True)
+```
+
+Go to **Project Settings → Environments** to hide or show individual environments for a project.

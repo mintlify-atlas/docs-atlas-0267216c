@@ -1,0 +1,210 @@
+---
+title: Members
+description: List, invite, and remove members from a Sentry organization using the API.
+---
+
+Member endpoints let you manage who has access to your organization, including inviting new users and assigning roles.
+
+## Member roles
+
+Every member is assigned a role that controls what they can do within the organization:
+
+| Role | Description |
+|---|---|
+| `owner` | Full access including billing and organization deletion |
+| `manager` | Can manage members, teams, and most organization settings |
+| `admin` | Can manage teams and projects they are a member of |
+| `member` | Can view and interact with issues in their teams' projects |
+| `contributor` | Read-only access to issues and events |
+
+## List organization members
+
+```
+GET /api/0/organizations/{organization_id_or_slug}/members/
+```
+
+Returns a paginated list of members belonging to the organization.
+
+**Required scope:** `member:read`
+
+### Path parameters
+
+<ParamField path="organization_id_or_slug" type="string" required>
+  The ID or slug of the organization.
+</ParamField>
+
+### Query parameters
+
+<ParamField query="query" type="string">
+  Filter members by name or email address.
+</ParamField>
+
+<ParamField query="cursor" type="string">
+  Pagination cursor from the `Link` response header.
+</ParamField>
+
+### Example request
+
+```bash
+curl https://sentry.io/api/0/organizations/my-org/members/ \
+  -H "Authorization: Bearer <token>"
+```
+
+### Example response
+
+```json
+[
+  {
+    "id": "1",
+    "email": "jane@example.com",
+    "name": "Jane Doe",
+    "role": "member",
+    "roleName": "Member",
+    "pending": false,
+    "expired": false,
+    "dateCreated": "2018-11-06T21:19:55Z",
+    "user": {
+      "id": "42",
+      "email": "jane@example.com",
+      "username": "jane@example.com",
+      "name": "Jane Doe",
+      "isActive": true
+    }
+  }
+]
+```
+
+### Response fields
+
+<ResponseField name="id" type="string">
+  The unique ID of the organization membership.
+</ResponseField>
+
+<ResponseField name="email" type="string">
+  The member's email address.
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  The member's display name.
+</ResponseField>
+
+<ResponseField name="role" type="string">
+  The member's role. One of `owner`, `manager`, `admin`, `member`, or `contributor`.
+</ResponseField>
+
+<ResponseField name="pending" type="boolean">
+  Whether the invitation is still pending acceptance.
+</ResponseField>
+
+<ResponseField name="expired" type="boolean">
+  Whether the invitation has expired.
+</ResponseField>
+
+<ResponseField name="dateCreated" type="string">
+  ISO 8601 timestamp of when the membership was created.
+</ResponseField>
+
+<ResponseField name="user" type="object | null">
+  The user object, or `null` if the invitation is pending.
+</ResponseField>
+
+---
+
+## Invite a member
+
+```
+POST /api/0/organizations/{organization_id_or_slug}/members/
+```
+
+Invites a new member to join the organization by sending them an invitation email.
+
+**Required scope:** `member:write`
+
+### Path parameters
+
+<ParamField path="organization_id_or_slug" type="string" required>
+  The ID or slug of the organization.
+</ParamField>
+
+### Request body
+
+<ParamField body="email" type="string" required>
+  The email address to send the invitation to.
+</ParamField>
+
+<ParamField body="role" type="string" required>
+  The role to assign. One of `owner`, `manager`, `admin`, `member`, or `contributor`.
+</ParamField>
+
+<ParamField body="teams" type="array">
+  A list of team slugs to add the member to upon acceptance.
+</ParamField>
+
+### Example request
+
+```bash
+curl -X POST https://sentry.io/api/0/organizations/my-org/members/ \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"email": "newperson@example.com", "role": "member", "teams": ["backend"]}'
+```
+
+---
+
+## Retrieve a member
+
+```
+GET /api/0/organizations/{organization_id_or_slug}/members/{member_id}/
+```
+
+Returns details for a single organization member.
+
+**Required scope:** `member:read`
+
+### Path parameters
+
+<ParamField path="organization_id_or_slug" type="string" required>
+  The ID or slug of the organization.
+</ParamField>
+
+<ParamField path="member_id" type="string" required>
+  The ID of the member. Use `me` to reference the currently authenticated user.
+</ParamField>
+
+### Example request
+
+```bash
+curl https://sentry.io/api/0/organizations/my-org/members/1/ \
+  -H "Authorization: Bearer <token>"
+```
+
+---
+
+## Remove a member
+
+```
+DELETE /api/0/organizations/{organization_id_or_slug}/members/{member_id}/
+```
+
+Removes a member from the organization. This does not delete the user's Sentry account.
+
+**Required scope:** `member:write`
+
+### Path parameters
+
+<ParamField path="organization_id_or_slug" type="string" required>
+  The ID or slug of the organization.
+</ParamField>
+
+<ParamField path="member_id" type="string" required>
+  The ID of the member to remove.
+</ParamField>
+
+### Example request
+
+```bash
+curl -X DELETE https://sentry.io/api/0/organizations/my-org/members/1/ \
+  -H "Authorization: Bearer <token>"
+```
+
+A successful removal returns `204 No Content`.

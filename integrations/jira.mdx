@@ -1,0 +1,134 @@
+---
+title: Jira
+description: Create Jira tickets from Sentry issues, sync status and assignees bidirectionally, and automate ticket creation with alert rules.
+---
+
+The Jira integration connects your Sentry organization to one or more Jira Cloud instances. It lets you create Jira tickets from Sentry issues, keep them in sync, and automatically create tickets based on alert rule conditions.
+
+<Note>
+For self-managed Jira Server or Jira Data Center instances, use the **Jira Server** integration instead. The setup process differs from Jira Cloud.
+</Note>
+
+## Features
+
+<CardGroup cols={2}>
+  <Card title="Create Jira tickets" icon="ticket">
+    Create a new Jira ticket directly from a Sentry issue with fields pre-populated from the error data.
+  </Card>
+  <Card title="Link existing tickets" icon="link">
+    Link a Sentry issue to an existing Jira ticket for quick cross-referencing.
+  </Card>
+  <Card title="Two-way sync" icon="arrow-left-right">
+    Closing a Jira ticket can resolve the linked Sentry issue, and vice versa. Assignees and comments sync bidirectionally.
+  </Card>
+  <Card title="Alert rule actions" icon="bell">
+    Automatically create Jira tickets when an issue alert fires.
+  </Card>
+</CardGroup>
+
+## Installation
+
+The Jira integration is installed from the Atlassian Marketplace, not directly in Sentry.
+
+<Steps>
+  <Step title="Install from the Marketplace">
+    Go to the [Sentry for Jira listing](https://marketplace.atlassian.com/apps/1219432/sentry-for-jira) on the Atlassian Marketplace and click **Get it now**. You must be a Jira admin to install the add-on.
+  </Step>
+  <Step title="Configure in Jira">
+    After installing, open the **Sentry** settings panel in your Jira instance (**Manage apps > Sentry**). Follow the prompts to link the Jira add-on to your Sentry organization.
+  </Step>
+  <Step title="Verify the connection in Sentry">
+    In Sentry, go to **Settings > Integrations > Jira**. Your Jira instance should appear as a connected installation.
+  </Step>
+</Steps>
+
+## Issue linking
+
+### Create a new Jira ticket
+
+1. Open a Sentry issue.
+2. In the **Linked Issues** sidebar section, click **Link a Jira issue**.
+3. Select **Create new issue** and fill in the fields:
+   - **Project**: The Jira project to create the ticket in.
+   - **Issue type**: Bug, Task, Story, and so on.
+   - **Title**: Pre-filled with the Sentry issue title.
+   - **Description**: Pre-filled with error details.
+   - Any additional required fields for the selected project and issue type.
+4. Click **Save**.
+
+### Link an existing ticket
+
+1. Open a Sentry issue.
+2. In the **Linked Issues** sidebar section, click **Link a Jira issue**.
+3. Select **Link existing issue** and search by Jira issue key or title.
+4. Select the ticket and click **Save**.
+
+## Two-way sync
+
+To configure sync between Sentry and Jira, go to **Settings > Integrations > Jira > Configure**.
+
+| Option | Description |
+|---|---|
+| Sync Jira status to Sentry | When a Jira ticket transitions to the configured resolved state, the linked Sentry issue is resolved. |
+| Sync Sentry status to Jira | When a Sentry issue is resolved, the linked Jira ticket transitions to the configured state. |
+| Sync assignees | Assigning an issue in Sentry assigns the linked Jira ticket, and vice versa. |
+| Sync comments | Comments on a Sentry issue are posted to the linked Jira ticket. |
+
+### Jira project status mapping
+
+For status sync to work, you need to map Jira projects to Sentry projects and define which Jira workflow statuses correspond to resolved and unresolved states.
+
+1. In the Jira integration settings, click **Add Jira project mapping**.
+2. Select the Jira project.
+3. Choose the workflow status that means **resolved** and the one that means **unresolved**.
+
+## Alert rule actions
+
+With the Jira integration installed, you can add a **Create a Jira issue** action to issue alert rules. When the alert fires, Sentry automatically creates a new Jira ticket.
+
+<Steps>
+  <Step title="Open your alert rule">
+    Go to **Alerts > Alert Rules** and create or edit a rule.
+  </Step>
+  <Step title="Add the Jira action">
+    Under **Then perform these actions**, click **Add action** and select **Jira**.
+  </Step>
+  <Step title="Configure the ticket fields">
+    Select the Jira project and issue type, then configure any additional required fields. You can use dynamic variables to populate fields from the triggering event.
+  </Step>
+</Steps>
+
+## Custom field mapping
+
+Sentry reads the field schema from Jira and renders the appropriate input type for each field when creating a ticket. Supported field types include:
+
+- Text and text area
+- Single select and multi-select
+- Number
+- Date and date-time
+- User picker
+- Team picker (Jira Software)
+- Issue link (hidden by default)
+
+<Warning>
+Some custom field types may not be supported. If a required field cannot be rendered, Sentry will display an error when you attempt to create a ticket.
+</Warning>
+
+## Jira Server
+
+The Jira Server integration supports Jira Data Center and Jira Server (self-managed). To install it:
+
+<Steps>
+  <Step title="Navigate to integrations">
+    In Sentry, go to **Settings > Integrations** and find **Jira Server**. Click **Install**.
+  </Step>
+  <Step title="Enter your Jira Server URL">
+    Provide the base URL of your Jira Server instance.
+  </Step>
+  <Step title="Create an application link in Jira">
+    Follow the on-screen instructions to create an application link (OAuth 1.0a) in your Jira instance and copy the consumer key.
+  </Step>
+  <Step title="Complete authorization">
+    Sentry redirects you to your Jira Server instance to grant access.
+  </Step>
+</Steps>

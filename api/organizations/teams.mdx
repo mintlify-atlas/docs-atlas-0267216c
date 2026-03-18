@@ -1,0 +1,218 @@
+---
+title: Teams
+description: List, create, and manage teams within a Sentry organization.
+---
+
+Teams are groups of members that are associated with one or more projects. Use teams to control which members have access to which projects.
+
+## List teams in an organization
+
+```
+GET /api/0/organizations/{organization_id_or_slug}/teams/
+```
+
+Returns a list of teams bound to an organization.
+
+**Required scope:** `team:read`
+
+### Path parameters
+
+<ParamField path="organization_id_or_slug" type="string" required>
+  The ID or slug of the organization.
+</ParamField>
+
+### Query parameters
+
+<ParamField query="detailed" type="string">
+  Set to `"1"` to include team member details in the response.
+</ParamField>
+
+<ParamField query="cursor" type="string">
+  Pagination cursor from the `Link` response header.
+</ParamField>
+
+### Example request
+
+```bash
+curl https://sentry.io/api/0/organizations/my-org/teams/ \
+  -H "Authorization: Bearer <token>"
+```
+
+### Example response
+
+```json
+[
+  {
+    "id": "1",
+    "slug": "backend",
+    "name": "Backend",
+    "dateCreated": "2018-11-06T21:20:08Z",
+    "isMember": true,
+    "memberCount": 5,
+    "avatar": {
+      "avatarType": "letter_avatar",
+      "avatarUuid": null
+    }
+  }
+]
+```
+
+### Response fields
+
+<ResponseField name="id" type="string">
+  The unique ID of the team.
+</ResponseField>
+
+<ResponseField name="slug" type="string">
+  The URL-friendly identifier for the team.
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  The display name of the team.
+</ResponseField>
+
+<ResponseField name="dateCreated" type="string">
+  ISO 8601 timestamp of when the team was created.
+</ResponseField>
+
+<ResponseField name="isMember" type="boolean">
+  Whether the authenticated user is a member of this team.
+</ResponseField>
+
+<ResponseField name="memberCount" type="integer">
+  The number of members in the team.
+</ResponseField>
+
+---
+
+## Create a team
+
+```
+POST /api/0/organizations/{organization_id_or_slug}/teams/
+```
+
+Creates a new team in the organization.
+
+**Required scope:** `team:write`
+
+### Path parameters
+
+<ParamField path="organization_id_or_slug" type="string" required>
+  The ID or slug of the organization.
+</ParamField>
+
+### Request body
+
+<ParamField body="name" type="string" required>
+  The display name for the team.
+</ParamField>
+
+<ParamField body="slug" type="string">
+  A unique slug for the team. Generated from the name if not provided.
+</ParamField>
+
+### Example request
+
+```bash
+curl -X POST https://sentry.io/api/0/organizations/my-org/teams/ \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Frontend"}'
+```
+
+---
+
+## Retrieve a team
+
+```
+GET /api/0/teams/{organization_id_or_slug}/{team_id_or_slug}/
+```
+
+Returns details for a specific team, including its members.
+
+**Required scope:** `team:read`
+
+### Path parameters
+
+<ParamField path="organization_id_or_slug" type="string" required>
+  The ID or slug of the organization.
+</ParamField>
+
+<ParamField path="team_id_or_slug" type="string" required>
+  The ID or slug of the team.
+</ParamField>
+
+### Example request
+
+```bash
+curl https://sentry.io/api/0/teams/my-org/backend/ \
+  -H "Authorization: Bearer <token>"
+```
+
+---
+
+## Add a member to a team
+
+```
+POST /api/0/organizations/{organization_id_or_slug}/members/{member_id}/teams/{team_id_or_slug}/
+```
+
+Adds an existing organization member to a team.
+
+**Required scope:** `team:write`
+
+### Path parameters
+
+<ParamField path="organization_id_or_slug" type="string" required>
+  The ID or slug of the organization.
+</ParamField>
+
+<ParamField path="member_id" type="string" required>
+  The ID of the organization member.
+</ParamField>
+
+<ParamField path="team_id_or_slug" type="string" required>
+  The ID or slug of the team.
+</ParamField>
+
+### Example request
+
+```bash
+curl -X POST https://sentry.io/api/0/organizations/my-org/members/1/teams/backend/ \
+  -H "Authorization: Bearer <token>"
+```
+
+---
+
+## Remove a member from a team
+
+```
+DELETE /api/0/organizations/{organization_id_or_slug}/members/{member_id}/teams/{team_id_or_slug}/
+```
+
+Removes an organization member from a specific team.
+
+**Required scope:** `team:write`
+
+### Path parameters
+
+<ParamField path="organization_id_or_slug" type="string" required>
+  The ID or slug of the organization.
+</ParamField>
+
+<ParamField path="member_id" type="string" required>
+  The ID of the organization member.
+</ParamField>
+
+<ParamField path="team_id_or_slug" type="string" required>
+  The ID or slug of the team to remove the member from.
+</ParamField>
+
+### Example request
+
+```bash
+curl -X DELETE https://sentry.io/api/0/organizations/my-org/members/1/teams/backend/ \
+  -H "Authorization: Bearer <token>"
+```
+
+A successful removal returns `200 OK` with the updated team membership object.

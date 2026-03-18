@@ -1,0 +1,161 @@
+---
+title: Event stats
+description: Retrieve time-series event statistics for charts, dashboards, and alerting using the Sentry API.
+---
+
+The event stats endpoint returns time-series data suitable for charts and trend analysis. Use it to plot error rates, transaction volumes, performance metrics, or any other aggregated event metric over time.
+
+## Get event stats
+
+```
+GET /api/0/organizations/{organization_id_or_slug}/events/stats/
+```
+
+Returns time-series data for one or more metrics.
+
+**Required scope:** `org:read`
+
+### Path parameters
+
+<ParamField path="organization_id_or_slug" type="string" required>
+  The ID or slug of the organization.
+</ParamField>
+
+### Query parameters
+
+<ParamField query="yAxis" type="string">
+  The metric to plot on the Y axis. Accepts any [aggregation function](/api/events/queries#aggregation-functions). Defaults to `count()`. Repeat to request multiple series: `yAxis=count()&yAxis=p95(transaction.duration)`.
+</ParamField>
+
+<ParamField query="query" type="string">
+  A Sentry search query to filter the events included in the stats. Uses the same syntax as the events query endpoint.
+</ParamField>
+
+<ParamField query="project" type="integer">
+  Filter by project ID. Repeat for multiple projects.
+</ParamField>
+
+<ParamField query="environment" type="string">
+  Filter by environment name.
+</ParamField>
+
+<ParamField query="statsPeriod" type="string">
+  A relative time window. Examples: `1h`, `24h`, `7d`, `14d`, `30d`. Cannot be combined with `start`/`end`.
+</ParamField>
+
+<ParamField query="start" type="string">
+  ISO 8601 start of the absolute time range. Requires `end`.
+</ParamField>
+
+<ParamField query="end" type="string">
+  ISO 8601 end of the absolute time range. Requires `start`.
+</ParamField>
+
+<ParamField query="interval" type="string">
+  The time bucket size for each data point. Examples: `1m`, `5m`, `1h`, `1d`. Sentry may adjust this to ensure a reasonable number of data points.
+</ParamField>
+
+<ParamField query="topEvents" type="integer">
+  When set, Sentry groups results by the top N unique values of the `field` parameter, returning one time series per group. Maximum is 10.
+</ParamField>
+
+<ParamField query="field" type="string">
+  When using `topEvents`, the field to group by (e.g. `transaction`, `error.type`).
+</ParamField>
+
+<ParamField query="referrer" type="string">
+  An optional string identifying the caller for query attribution.
+</ParamField>
+
+### Example request
+
+```bash
+curl "https://sentry.io/api/0/organizations/my-org/events/stats/?yAxis=count()&statsPeriod=24h&interval=1h" \
+  -H "Authorization: Bearer <token>"
+```
+
+### Example response (single series)
+
+```json
+{
+  "data": [
+    [1541455200, [{"count": 473}]],
+    [1541458800, [{"count": 914}]],
+    [1541462400, [{"count": 991}]],
+    [1541466000, [{"count": 925}]]
+  ],
+  "start": 1541455200,
+  "end": 1541538000
+}
+```
+
+Each element in `data` is a `[unix_timestamp, [{"count": value}]]` pair.
+
+### Example response (multiple yAxis)
+
+When you request multiple `yAxis` values, the response contains a top-level key for each metric:
+
+```json
+{
+  "count()": {
+    "data": [
+      [1541455200, [{"count": 473}]],
+      [1541458800, [{"count": 914}]]
+    ],
+    "start": 1541455200,
+    "end": 1541538000
+  },
+  "p95(transaction.duration)": {
+    "data": [
+      [1541455200, [{"count": 234.5}]],
+      [1541458800, [{"count": 312.1}]]
+    ],
+    "start": 1541455200,
+    "end": 1541538000
+  }
+}
+```
+
+## Response fields
+
+<ResponseField name="data" type="array">
+  An array of `[timestamp, [{count: value}]]` data points. Each timestamp is a Unix epoch integer.
+</ResponseField>
+
+<ResponseField name="start" type="integer">
+  Unix timestamp of the start of the time range.
+</ResponseField>
+
+<ResponseField name="end" type="integer">
+  Unix timestamp of the end of the time range.
+</ResponseField>
+
+## Example use cases
+
+### Error rate over the last 24 hours
+
+```bash
+curl "https://sentry.io/api/0/organizations/my-org/events/stats/?yAxis=count()&query=event.type:error&statsPeriod=24h&interval=1h" \
+  -H "Authorization: Bearer <token>"
+```
+
+### Transaction volume with P95 latency
+
+```bash
+curl "https://sentry.io/api/0/organizations/my-org/events/stats/?yAxis=count()&yAxis=p95(transaction.duration)&query=event.type:transaction&statsPeriod=7d&interval=1h" \
+  -H "Authorization: Bearer <token>"
+```
+
+### Top 5 slowest transactions over the last week
+
+```bash
+curl "https://sentry.io/api/0/organizations/my-org/events/stats/?yAxis=p95(transaction.duration)&field=transaction&topEvents=5&query=event.type:transaction&statsPeriod=7d&interval=1d" \
+  -H "Authorization: Bearer <token>"
+```
+
+### Failure rate by environment
+
+```bash
+curl "https://sentry.io/api/0/organizations/my-org/events/stats/?yAxis=failure_rate()&environment=production&query=event.type:transaction&statsPeriod=24h&interval=30m" \
+  -H "Authorization: Bearer <token>"
+```

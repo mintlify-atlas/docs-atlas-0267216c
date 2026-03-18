@@ -1,0 +1,85 @@
+---
+title: Discover
+description: Query and explore your Sentry event data with an ad-hoc query builder backed by Snuba.
+---
+
+Discover is Sentry's ad-hoc query interface. It lets you explore raw event data across errors, transactions, and spans without being constrained to a predefined view. You can filter, aggregate, group, and sort any combination of fields.
+
+## Query builder
+
+The Discover query builder consists of three main sections:
+
+### Columns
+
+Select the fields you want to see in the results. You can add raw fields (for example, `transaction`, `user.email`, `release`) or aggregate functions:
+
+| Function | Description |
+|---|---|
+| `count()` | Number of events |
+| `count_unique(field)` | Number of distinct values |
+| `p50(field)` | 50th percentile |
+| `p75(field)` / `p95(field)` / `p99(field)` | Higher percentiles |
+| `avg(field)` | Average value |
+| `sum(field)` | Sum of values |
+| `min(field)` / `max(field)` | Minimum or maximum value |
+| `failure_rate()` | Percentage of failed transactions |
+| `apdex(threshold)` | Apdex score for a given threshold |
+
+### Conditions
+
+Filter events using the same search syntax as the issue list:
+
+```text
+transaction:/api/checkout environment:production !has:error
+user.email:alice@example.com p95(transaction.duration):>1000
+```
+
+You can combine field filters, tag filters, and negations.
+
+### Group by
+
+Group results by one or more fields to produce an aggregated view. For example, group by `transaction` and `http.status_code` to see each endpoint's success/failure breakdown.
+
+## Running a query
+
+<Steps>
+  <Step title="Navigate to Discover">
+    Click **Discover** in the Sentry sidebar.
+  </Step>
+  <Step title="Choose a dataset">
+    Select **Errors**, **Transactions**, or **Spans** depending on what you want to analyze.
+  </Step>
+  <Step title="Build your query">
+    Add columns, apply filters, and optionally add a group-by field.
+  </Step>
+  <Step title="Set the time range">
+    Use the time picker to narrow the window (last 1 hour, last 24 hours, custom range, etc.).
+  </Step>
+  <Step title="Run and explore">
+    Click **Search** to execute. Sort the results by any column and click into individual rows to open the full event.
+  </Step>
+</Steps>
+
+## Saved queries
+
+Save any query to revisit later. Saved queries are visible to all members of your organization. You can also **star** a saved query to pin it to the top of your list.
+
+## Exporting results
+
+You can export query results as a CSV file for further analysis in external tools. The export includes all selected columns for up to the configured row limit.
+
+## How Discover works
+
+Discover queries run against **Snuba**, Sentry's analytical query layer built on ClickHouse. Snuba stores a denormalized copy of all event data in column-oriented tables optimized for aggregate queries over large time ranges.
+
+When you run a Discover query:
+
+1. The Sentry frontend translates the query builder state into a Snuba query.
+2. Snuba executes the query against ClickHouse and returns aggregated results.
+3. The results are rendered in the Discover table or chart.
+
+This architecture enables sub-second query times even over billions of events, as long as the query uses indexed columns in the filter conditions.
+
+<Note>
+Discover operates on sampled data. If you set a low `traces_sample_rate`, your Discover results for transactions will reflect that sample, not the full volume. Use the `count()` column alongside `failure_rate()` or percentiles to understand the significance of results.
+</Note>

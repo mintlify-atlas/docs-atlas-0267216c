@@ -1,0 +1,58 @@
+---
+title: Linear
+description: Create Linear issues from Sentry, link existing issues, and navigate between them without leaving your workflow.
+---
+
+The Linear integration lets you create and link Linear issues directly from Sentry issues. It uses OAuth to connect your Sentry organization to your Linear workspace.
+
+## Features
+
+<CardGroup cols={2}>
+  <Card title="Create Linear issues" icon="ticket">
+    Create a new Linear issue from a Sentry issue with the title and description pre-filled.
+  </Card>
+  <Card title="Link existing issues" icon="link">
+    Link a Sentry issue to an existing Linear issue for cross-referencing.
+  </Card>
+</CardGroup>
+
+## Installation
+
+<Steps>
+  <Step title="Navigate to integrations">
+    In Sentry, go to **Settings > Integrations** and find **Linear** in the Issue Tracking group. Click **Install**.
+  </Step>
+  <Step title="Authorize with Linear">
+    Sentry redirects you to Linear to authorize access to your workspace. Sign in and click **Allow access**.
+  </Step>
+  <Step title="Confirm the installation">
+    After authorization, Sentry redirects you back and the Linear integration appears as installed.
+  </Step>
+</Steps>
+
+## Issue linking
+
+### Create a new Linear issue
+
+1. Open a Sentry issue.
+2. In the **Linked Issues** sidebar section, click **Link a Linear issue**.
+3. Select **Create new issue** and fill in:
+   - **Team**: The Linear team to assign the issue to.
+   - **Title**: Pre-filled from the Sentry issue title.
+   - **Description**: Pre-filled with error details.
+   - **Project**: Optional Linear project.
+   - **Priority**: Optional priority level.
+4. Click **Save**.
+
+### Link an existing Linear issue
+
+1. Open a Sentry issue.
+2. In the **Linked Issues** sidebar section, click **Link a Linear issue**.
+3. Select **Link existing issue** and search by title or issue ID.
+4. Select the issue and click **Save**.
+
+Once linked, Sentry displays the Linear issue title, status, and a direct link in the sidebar.
+
+## Unlinking issues
+
+To remove a link between a Sentry issue and a Linear issue, open the Sentry issue and click the unlink icon next to the linked Linear issue in the sidebar.

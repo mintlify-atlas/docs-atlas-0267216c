@@ -1,0 +1,262 @@
+---
+title: Releases
+description: Create, list, and manage releases and deploys using the Sentry API.
+---
+
+Releases let Sentry correlate errors with specific versions of your application. By tracking releases you can identify which version introduced a bug, which release resolved it, and how many new issues appeared in each deploy.
+
+## List releases for an organization
+
+```
+GET /api/0/organizations/{organization_id_or_slug}/releases/
+```
+
+Returns a paginated list of releases for the organization.
+
+**Required scope:** `project:releases`
+
+### Path parameters
+
+<ParamField path="organization_id_or_slug" type="string" required>
+  The ID or slug of the organization.
+</ParamField>
+
+### Query parameters
+
+<ParamField query="query" type="string">
+  Filters releases to those whose version string starts with the given value.
+</ParamField>
+
+<ParamField query="cursor" type="string">
+  Pagination cursor from the `Link` response header.
+</ParamField>
+
+### Example request
+
+```bash
+curl https://sentry.io/api/0/organizations/my-org/releases/ \
+  -H "Authorization: Bearer <token>"
+```
+
+### Example response
+
+```json
+[
+  {
+    "id": 2,
+    "version": "2.0rc2",
+    "shortVersion": "2.0rc2",
+    "ref": "6ba09a7c53235ee8a8fa5ee4c1ca8ca886e7fdbb",
+    "url": null,
+    "dateCreated": "2018-11-06T21:20:08.033Z",
+    "dateReleased": null,
+    "commitCount": 0,
+    "deployCount": 0,
+    "newGroups": 0,
+    "lastCommit": null,
+    "lastDeploy": null,
+    "authors": [],
+    "projects": [
+      { "name": "Pump Station", "slug": "pump-station" }
+    ],
+    "data": {}
+  }
+]
+```
+
+### Response fields
+
+<ResponseField name="id" type="integer">
+  The internal ID of the release.
+</ResponseField>
+
+<ResponseField name="version" type="string">
+  The release version string (commit hash, semver, etc.).
+</ResponseField>
+
+<ResponseField name="shortVersion" type="string">
+  A shortened version of the version string for display purposes.
+</ResponseField>
+
+<ResponseField name="ref" type="string | null">
+  An optional commit reference (e.g. a branch name or tag).
+</ResponseField>
+
+<ResponseField name="url" type="string | null">
+  An optional URL pointing to the release (e.g. a changelog or CI build).
+</ResponseField>
+
+<ResponseField name="dateCreated" type="string">
+  ISO 8601 timestamp of when the release was created in Sentry.
+</ResponseField>
+
+<ResponseField name="dateReleased" type="string | null">
+  ISO 8601 timestamp of when the release went live, if provided.
+</ResponseField>
+
+<ResponseField name="commitCount" type="integer">
+  Number of commits associated with this release.
+</ResponseField>
+
+<ResponseField name="deployCount" type="integer">
+  Number of deploys for this release.
+</ResponseField>
+
+<ResponseField name="newGroups" type="integer">
+  Number of new issues first seen in this release.
+</ResponseField>
+
+<ResponseField name="lastDeploy" type="object | null">
+  Details of the most recent deploy for this release.
+</ResponseField>
+
+<ResponseField name="projects" type="array">
+  A list of projects associated with this release.
+</ResponseField>
+
+---
+
+## Create a release
+
+```
+POST /api/0/organizations/{organization_id_or_slug}/releases/
+```
+
+Creates a new release for the organization. Releases are used by Sentry to correlate first-seen events with the version that introduced them, and are required for source map uploads and commit-based features.
+
+**Required scope:** `project:releases`
+
+### Path parameters
+
+<ParamField path="organization_id_or_slug" type="string" required>
+  The ID or slug of the organization.
+</ParamField>
+
+### Request body
+
+<ParamField body="version" type="string" required>
+  A version identifier such as a commit hash, semver string, or custom version.
+</ParamField>
+
+<ParamField body="projects" type="array" required>
+  A list of project slugs that this release is associated with.
+</ParamField>
+
+<ParamField body="ref" type="string">
+  An optional commit reference (e.g. a branch name or tag).
+</ParamField>
+
+<ParamField body="url" type="string">
+  An optional URL for the release (e.g. a CI build or changelog).
+</ParamField>
+
+<ParamField body="dateReleased" type="string">
+  ISO 8601 timestamp of when the release went live. Defaults to the current time.
+</ParamField>
+
+<ParamField body="commits" type="array">
+  An optional list of commit objects to associate with the release. Each commit may include `id` (required), `repository`, `message`, `author_name`, `author_email`, `timestamp`, and `patch_set`.
+</ParamField>
+
+<ParamField body="refs" type="array">
+  An optional list of repository refs. Each ref requires `repository` and `commit`, and optionally `previousCommit`.
+</ParamField>
+
+### Example request
+
+```bash
+curl -X POST https://sentry.io/api/0/organizations/my-org/releases/ \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "version": "2.0rc2",
+    "ref": "6ba09a7c53235ee8a8fa5ee4c1ca8ca886e7fdbb",
+    "projects": ["pump-station"]
+  }'
+```
+
+### Example response
+
+```json
+{
+  "id": 2,
+  "version": "2.0rc2",
+  "shortVersion": "2.0rc2",
+  "ref": "6ba09a7c53235ee8a8fa5ee4c1ca8ca886e7fdbb",
+  "url": null,
+  "dateCreated": "2019-01-03T00:12:55.109Z",
+  "dateReleased": null,
+  "newGroups": 0,
+  "commitCount": 0,
+  "deployCount": 0,
+  "projects": [
+    { "name": "Pump Station", "slug": "pump-station" }
+  ]
+}
+```
+
+---
+
+## Create a deploy
+
+```
+POST /api/0/organizations/{organization_id_or_slug}/releases/{version}/deploys/
+```
+
+Records a deploy for a release. A deploy represents an instance of a release being made available in a specific environment.
+
+**Required scope:** `project:releases`
+
+### Path parameters
+
+<ParamField path="organization_id_or_slug" type="string" required>
+  The ID or slug of the organization.
+</ParamField>
+
+<ParamField path="version" type="string" required>
+  The version string of the release to deploy.
+</ParamField>
+
+### Request body
+
+<ParamField body="environment" type="string" required>
+  The environment being deployed to (e.g. `production`, `staging`).
+</ParamField>
+
+<ParamField body="name" type="string">
+  An optional name for the deploy (e.g. a deployment pipeline name).
+</ParamField>
+
+<ParamField body="url" type="string">
+  An optional URL that points to the deploy output.
+</ParamField>
+
+<ParamField body="dateStarted" type="string">
+  ISO 8601 timestamp of when the deploy started.
+</ParamField>
+
+<ParamField body="dateFinished" type="string">
+  ISO 8601 timestamp of when the deploy finished.
+</ParamField>
+
+### Example request
+
+```bash
+curl -X POST https://sentry.io/api/0/organizations/my-org/releases/2.0rc2/deploys/ \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"environment": "production", "name": "Deploy #42"}'
+```
+
+### Example response
+
+```json
+{
+  "id": "6883490",
+  "name": "Deploy #42",
+  "url": null,
+  "environment": "production",
+  "dateStarted": null,
+  "dateFinished": "2019-01-03T00:12:55.109Z"
+}
+```

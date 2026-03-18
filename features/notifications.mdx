@@ -1,0 +1,96 @@
+---
+title: Notifications
+description: Control when and how Sentry notifies you about issues, deploys, quota usage, and workflow activity.
+---
+
+Sentry sends notifications through multiple channels and for different types of events. You can configure notifications at the organization level, the project level, and as personal preferences.
+
+## Notification types
+
+<CardGroup cols={2}>
+  <Card title="Issue alerts" icon="bell">
+    Triggered by alert rules. Notifies you when a new issue is created, a regression occurs, or frequency thresholds are crossed.
+  </Card>
+  <Card title="Workflow" icon="arrows-rotate">
+    Activity on issues you are subscribed to — comments, assignment changes, status changes, and regressions.
+  </Card>
+  <Card title="Deploy" icon="rocket">
+    Sent when a release is deployed to an environment. You can receive notifications for all deploys or only releases that contain your commits.
+  </Card>
+  <Card title="Spike protection" icon="chart-line">
+    Warns you when inbound event volume spikes significantly above your baseline, which could indicate an incident or runaway error.
+  </Card>
+  <Card title="Quota" icon="gauge">
+    Alerts when your organization approaches or reaches its event quota (errors, transactions, replays, spans, and so on).
+  </Card>
+  <Card title="Weekly reports" icon="chart-bar">
+    A weekly summary of your top issues, error volume trends, and performance stats.
+  </Card>
+</CardGroup>
+
+## Notification channels
+
+Sentry delivers notifications through the following channels:
+
+<Tabs>
+  <Tab title="Email">
+    The default channel. Sentry sends HTML emails for issue alerts, workflow notifications, and digests. You can configure your email address under **User Settings → Account**.
+
+    **Digest emails** bundle multiple issue alert notifications into a single email, reducing inbox noise. The digest is sent at most once per the configured interval (default: 5 minutes).
+  </Tab>
+  <Tab title="Slack">
+    Connect your Slack workspace via **Organization Settings → Integrations → Slack**. Once connected, you can add Slack workspaces as actions in any alert rule and receive rich issue cards directly in your channels.
+  </Tab>
+  <Tab title="PagerDuty">
+    Integrate PagerDuty to trigger and resolve incidents automatically. Add PagerDuty services as actions in metric alert rules to page your on-call rotation when critical thresholds are breached.
+  </Tab>
+  <Tab title="Microsoft Teams">
+    Connect a Teams workspace to send issue and metric alert notifications to any Teams channel.
+  </Tab>
+  <Tab title="Discord">
+    Send notifications to Discord server channels. Configure the integration under **Organization Settings → Integrations → Discord**.
+  </Tab>
+</Tabs>
+
+## Personal notification settings
+
+Each user can override organization defaults in **User Settings → Notifications**. Settings are organized by notification type:
+
+| Type | Available options |
+|---|---|
+| Issue alerts | Always, Never |
+| Workflow | Always, Only on issues I subscribe to, Never |
+| Deploy | Always, Only on my commits, Never |
+| Quota | Always, Never |
+| Weekly reports | Always, Never |
+| Spike protection | Always, Never |
+
+You can also configure per-project overrides when you want different behavior for specific projects.
+
+## Organization-level defaults
+
+Organization owners and managers can set default notification preferences for all members under **Organization Settings → Notifications**. Members can override these defaults in their personal settings.
+
+## Configuring notification actions in alert rules
+
+When creating or editing an alert rule, the **Actions** section lets you add one or more notification targets. Each target specifies:
+
+1. **Channel** — email, Slack, PagerDuty, MSTeams, Discord, or webhook
+2. **Target** — a specific user, team, channel, or service
+3. **Trigger level** — warning or critical (metric alerts only)
+
+Example Slack action configuration in an alert rule:
+- Send a Slack message to `#backend-alerts` in `My Workspace`
+
+## Issue subscriptions
+
+You are automatically subscribed to an issue when you:
+
+- Comment on it
+- Are assigned to it
+- Bookmark it
+- Change its status
+- Are @mentioned in a comment
+- Are a member of a @mentioned team
+
+You can manually subscribe or unsubscribe from any issue using the **Subscribe** button on the issue details page. Workflow notifications are only sent for issues you are subscribed to (if you chose the "subscribe only" option).

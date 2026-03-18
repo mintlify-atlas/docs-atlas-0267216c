@@ -1,0 +1,132 @@
+---
+title: Metrics
+description: Track custom numeric measurements from your application using counters, gauges, distributions, and sets.
+---
+
+Sentry Metrics lets you instrument your application with custom numeric measurements and visualize them over time. Unlike errors or transactions (which capture individual events), metrics are aggregated server-side, making them suitable for high-cardinality data points that would be too expensive to store as individual events.
+
+## Metric types
+
+<CardGroup cols={2}>
+  <Card title="Counter" icon="plus">
+    Tracks how many times something happened. Supports `increment()`. Use for counting events like successful payments, cache hits, or feature flag evaluations.
+  </Card>
+  <Card title="Gauge" icon="gauge">
+    Tracks the current value of something that goes up and down. Reports min, max, last, sum, and count. Use for queue depth, active connections, or memory usage.
+  </Card>
+  <Card title="Distribution" icon="chart-bar">
+    Records the statistical distribution of values. Supports percentile queries (p50, p75, p95, p99). Use for request durations, payload sizes, or DB query times.
+  </Card>
+  <Card title="Set" icon="list-check">
+    Counts unique occurrences. Use for counting unique users who triggered an event or unique session IDs in a time window.
+  </Card>
+</CardGroup>
+
+## Emitting metrics via the SDK
+
+<CodeGroup>
+
+```python Python
+import sentry_sdk
+
+# Counter: increment by 1 (default) or a custom value
+sentry_sdk.metrics.incr(
+    key="checkout.button.clicked",
+    value=1,
+    tags={"variant": "blue", "environment": "production"},
+)
+
+# Distribution: record a value for percentile analysis
+sentry_sdk.metrics.distribution(
+    key="api.response_time",
+    value=142.5,
+    unit="millisecond",
+    tags={"endpoint": "/api/checkout"},
+)
+
+# Gauge: set the current value
+sentry_sdk.metrics.gauge(
+    key="queue.depth",
+    value=73,
+    tags={"queue": "email"},
+)
+
+# Set: track unique values
+sentry_sdk.metrics.set(
+    key="active.users",
+    value=user.id,
+    tags={"plan": "pro"},
+)
+```
+
+```javascript Node.js
+import * as Sentry from "@sentry/node";
+
+// Counter
+Sentry.metrics.increment("checkout.button.clicked", 1, {
+  tags: { variant: "blue" },
+});
+
+// Distribution
+Sentry.metrics.distribution("api.response_time", 142.5, {
+  unit: "millisecond",
+  tags: { endpoint: "/api/checkout" },
+});
+
+// Gauge
+Sentry.metrics.gauge("queue.depth", 73, {
+  tags: { queue: "email" },
+});
+
+// Set
+Sentry.metrics.set("active.users", userId, {
+  tags: { plan: "pro" },
+});
+```
+
+</CodeGroup>
+
+## Metric units
+
+When emitting a distribution, you can specify a unit to improve chart readability:
+
+| Category | Examples |
+|---|---|
+| Duration | `nanosecond`, `microsecond`, `millisecond`, `second`, `minute`, `hour`, `day`, `week` |
+| Information | `bit`, `byte`, `kilobyte`, `megabyte`, `gigabyte`, `terabyte` |
+| Fraction | `ratio`, `percent` |
+| Custom | Any string — displayed as-is in the UI |
+
+## Metrics Explorer
+
+The **Metrics Explorer** in Sentry lets you visualize and query your custom metrics:
+
+- Select a metric by name and type
+- Choose an aggregation: `sum`, `count`, `avg`, `p50`, `p75`, `p95`, `p99`, `min`, `max`
+- Apply tag filters to narrow the data
+- Group by one or more tags to create multi-series charts
+- Set the time range and granularity
+
+## Metric alerts
+
+You can create metric alerts based on your custom metrics in the same way as performance metric alerts:
+
+1. Go to **Alerts → Create Alert → Metric Alert**.
+2. Select **Custom Metrics** as the data source.
+3. Choose your metric name and aggregation function.
+4. Set warning and critical thresholds.
+5. Add notification actions.
+
+## Cardinality limits
+
+Sentry applies cardinality limits to protect query performance. A high-cardinality tag (for example, using a user ID or request ID as a tag value) can create millions of unique time series, which degrades performance and increases cost.
+
+<Warning>
+Do not use high-cardinality values as metric tags. User IDs, session IDs, request IDs, and UUIDs should never be tag values. Use them as the `value` of a Set metric instead if you need to count unique occurrences.
+</Warning>
+
+Sentry enforces cardinality limits per use case. When a metric exceeds the limit, new time series for that metric are dropped until cardinality drops below the threshold.
+
+## Ingestion architecture
+
+Metrics are ingested through the Sentry SDK → Relay → Kafka → Snuba pipeline. Relay aggregates raw metric samples into buckets (typically 10-second windows) before forwarding them, which significantly reduces the volume of data sent to Snuba. Snuba stores the pre-aggregated buckets in ClickHouse where they can be queried efficiently.
