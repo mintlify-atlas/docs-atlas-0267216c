@@ -100,9 +100,11 @@ This guide walks you through creating an account, setting up a project, installi
         ```python
         import sentry_sdk
 
-        with sentry_sdk.push_scope() as scope:
-            scope.set_extra("source", "quickstart")
+        # Capture an exception directly
+        try:
             raise ValueError("This is a test error from Sentry quickstart")
+        except Exception as e:
+            sentry_sdk.capture_exception(e)
         ```
 
         Or from a Django view:

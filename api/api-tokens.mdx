@@ -26,7 +26,7 @@ User auth tokens are tied to your personal Sentry account. Any API call made wit
   </Step>
 </Steps>
 
-User auth tokens are prefixed with `sntrys_`.
+User auth tokens are prefixed with `sntryu_`.
 
 ## Internal integration tokens
 
@@ -100,7 +100,7 @@ Never commit tokens to source control. If you accidentally expose a token, revok
 
 ```bash
 # Store the token in your environment
-export SENTRY_AUTH_TOKEN=sntrys_YOUR_TOKEN_HERE
+export SENTRY_AUTH_TOKEN=sntryu_YOUR_TOKEN_HERE
 
 # Use it in curl requests
 curl https://sentry.io/api/0/organizations/ \

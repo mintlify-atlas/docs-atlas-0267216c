@@ -7,7 +7,7 @@ Sentry uses **fingerprinting** to decide which events belong together in the sam
 
 ## Default grouping
 
-When you do not configure custom rules, Sentry applies a built-in grouping strategy. The active strategy is controlled by the project's grouping configuration. Current production configuration is `newstyle:2023-01-11`; a newer `fall2025` configuration is available for projects that opt in.
+When you do not configure custom rules, Sentry applies a built-in grouping strategy. The active strategy is controlled by the project's grouping configuration. The current default is `newstyle:2026-01-20`; older projects may still use `newstyle:2023-01-11` and can upgrade in project settings.
 
 The default strategy inspects the event in this priority order:
 
@@ -72,7 +72,7 @@ You can also set a fingerprint directly in the SDK before the event is sent:
 ```python
 import sentry_sdk
 
-with sentry_sdk.push_scope() as scope:
+with sentry_sdk.new_scope() as scope:
     scope.fingerprint = ["my-custom-fingerprint", "{{ default }}"]
     sentry_sdk.capture_exception(exception)
 ```
@@ -85,10 +85,10 @@ Sentry ships two named grouping configurations:
 
 | Config ID | Description |
 |---|---|
-| `newstyle:2023-01-11` | Current default. Applies JS single-frame URL normalization and other compatibility shims. |
-| `newstyle:fall-2025` | Updated config with improved exception subcomponent ordering, better parameterization, and stricter unknown-variable handling. |
+| `newstyle:2026-01-20` | Current default. Improved exception subcomponent ordering, better parameterization, and stricter unknown-variable handling. |
+| `newstyle:2023-01-11` | Legacy config. Applies JS single-frame URL normalization and other compatibility shims for older projects. |
 
-New projects are created with the latest stable config. Existing projects can upgrade in **Project Settings → Issue Grouping → Grouping Config**.
+New projects are created with the latest default (`newstyle:2026-01-20`). Existing projects can upgrade in **Project Settings → Issue Grouping → Grouping Config**.
 
 ## Merging and unmerging issues
 

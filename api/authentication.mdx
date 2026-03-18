@@ -17,7 +17,7 @@ Here is a complete example using `curl`:
 
 ```bash
 curl https://sentry.io/api/0/organizations/ \
-  -H "Authorization: Bearer sntrys_YOUR_TOKEN_HERE"
+  -H "Authorization: Bearer sntryu_YOUR_TOKEN_HERE"
 ```
 
 ## Token types
@@ -80,6 +80,8 @@ The Sentry API enforces rate limits to protect service availability. Rate limit 
 | `X-Sentry-Rate-Limit-Limit` | Maximum number of requests per window |
 | `X-Sentry-Rate-Limit-Remaining` | Requests remaining in the current window |
 | `X-Sentry-Rate-Limit-Reset` | Unix timestamp when the window resets |
+| `X-Sentry-Rate-Limit-ConcurrentLimit` | Maximum concurrent requests allowed |
+| `X-Sentry-Rate-Limit-ConcurrentRemaining` | Concurrent request slots remaining |
 
 When you exceed the rate limit, the API returns a `429 Too Many Requests` response. Your client should back off and retry after the time indicated in the `Retry-After` header.
 

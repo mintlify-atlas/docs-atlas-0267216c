@@ -102,7 +102,7 @@
             "group": "Issue Tracking",
             "pages": [
               "integrations/jira",
-              "integrations/linear",
+              "integrations/opsgenie",
               "integrations/azure-devops"
             ]
           },

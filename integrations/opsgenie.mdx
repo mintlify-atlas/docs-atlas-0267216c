@@ -1,0 +1,84 @@
+---
+title: Opsgenie
+description: Route Sentry alerts to Opsgenie teams and manage on-call incidents directly from Sentry.
+---
+
+The Opsgenie integration sends Sentry alert notifications to Opsgenie, creating alerts for your on-call teams. You can configure Sentry alert rules to notify specific Opsgenie teams with a defined priority level.
+
+## Features
+
+<CardGroup cols={2}>
+  <Card title="Alert routing" icon="bell">
+    Send Sentry issue alerts to Opsgenie teams with P1–P5 priority levels.
+  </Card>
+  <Card title="Team targeting" icon="users">
+    Route different alert rules to different Opsgenie teams based on project or issue type.
+  </Card>
+</CardGroup>
+
+## Installation
+
+<Steps>
+  <Step title="Get an Opsgenie API key">
+    In Opsgenie, go to **Settings > API key management** and create a new API key with **Create and Update** access. Copy the key.
+  </Step>
+  <Step title="Navigate to integrations in Sentry">
+    In Sentry, go to **Settings > Integrations** and find **Opsgenie**. Click **Install**.
+  </Step>
+  <Step title="Add your Opsgenie account">
+    Enter your Opsgenie API key and a name for this account (for example, your organization name). Click **Save**.
+  </Step>
+  <Step title="Add team integration keys">
+    After saving the account, add **team integration keys** for each Opsgenie team you want to notify. Each team in Opsgenie has its own integration key, which you can find in the team's settings under **Integrations → API**.
+  </Step>
+</Steps>
+
+## Configuring alert rules
+
+Once installed, you can add Opsgenie as an action in any Sentry alert rule:
+
+<Steps>
+  <Step title="Open or create an alert rule">
+    Go to **Alerts** in your project and click an existing rule or create a new one.
+  </Step>
+  <Step title="Add the Opsgenie action">
+    Under **Then perform these actions**, select **Send a notification to Opsgenie account**.
+  </Step>
+  <Step title="Configure the action">
+    Choose:
+    - **Account**: the Opsgenie account you connected
+    - **Team**: the Opsgenie team to notify
+    - **Priority**: P1 (critical) through P5 (informational); defaults to **P3**
+  </Step>
+  <Step title="Save the rule">
+    Click **Save Rule**. Sentry will now create Opsgenie alerts when the rule triggers.
+  </Step>
+</Steps>
+
+## Alert priority levels
+
+Opsgenie alerts created by Sentry use the priority you configure in the alert rule action:
+
+| Priority | Severity |
+|---|---|
+| P1 | Critical |
+| P2 | High |
+| P3 | Moderate (default) |
+| P4 | Low |
+| P5 | Informational |
+
+<Note>
+The default priority is **P3** when no priority is explicitly selected in the alert rule action.
+</Note>
+
+## Troubleshooting
+
+**Alerts not appearing in Opsgenie**
+
+- Verify the API key has **Create and Update** permissions.
+- Confirm the team integration key is correctly entered in Sentry's Opsgenie account settings.
+- Check that the Sentry alert rule has triggered (visible in the alert rule's **Alert History**).
+
+**Wrong team receiving alerts**
+
+- Each Opsgenie team requires its own integration key. Make sure you've added a team key for every team you want to target and that you've selected the correct team in the alert rule action.
