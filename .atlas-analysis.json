@@ -1,0 +1,201 @@
+{
+  "projectType": "saas",
+  "projectName": "Sentry",
+  "projectDescription": "A developer-first error tracking and performance monitoring platform that helps teams detect, trace, and fix issues across their applications.",
+  "theme": "maple",
+  "primaryColor": "#5b3876",
+  "lightColor": "#ac93b6",
+  "darkColor": "#d9d0df",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Overview",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "self-hosted"
+            ]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "concepts/projects",
+              "concepts/organizations",
+              "concepts/environments",
+              "concepts/releases"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Features",
+        "groups": [
+          {
+            "group": "Error Monitoring",
+            "pages": [
+              "features/issues",
+              "features/issue-grouping",
+              "features/alerts",
+              "features/notifications"
+            ]
+          },
+          {
+            "group": "Performance",
+            "pages": [
+              "features/performance",
+              "features/tracing",
+              "features/profiling",
+              "features/web-vitals"
+            ]
+          },
+          {
+            "group": "Debugging",
+            "pages": [
+              "features/replays",
+              "features/dashboards",
+              "features/discover",
+              "features/logs"
+            ]
+          },
+          {
+            "group": "Reliability",
+            "pages": [
+              "features/crons",
+              "features/uptime",
+              "features/metrics"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Integrations",
+        "groups": [
+          {
+            "group": "Source Control",
+            "pages": [
+              "integrations/github",
+              "integrations/gitlab",
+              "integrations/bitbucket"
+            ]
+          },
+          {
+            "group": "Issue Tracking",
+            "pages": [
+              "integrations/jira",
+              "integrations/linear",
+              "integrations/azure-devops"
+            ]
+          },
+          {
+            "group": "Notifications",
+            "pages": [
+              "integrations/slack",
+              "integrations/discord",
+              "integrations/msteams",
+              "integrations/pagerduty"
+            ]
+          },
+          {
+            "group": "Developer Platform",
+            "pages": [
+              "integrations/sentry-apps",
+              "integrations/webhooks"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Authentication",
+            "pages": [
+              "api/authentication",
+              "api/api-tokens"
+            ]
+          },
+          {
+            "group": "Organizations",
+            "pages": [
+              "api/organizations/overview",
+              "api/organizations/projects",
+              "api/organizations/members",
+              "api/organizations/teams"
+            ]
+          },
+          {
+            "group": "Projects",
+            "pages": [
+              "api/projects/overview",
+              "api/projects/issues",
+              "api/projects/events",
+              "api/projects/releases"
+            ]
+          },
+          {
+            "group": "Events & Issues",
+            "pages": [
+              "api/events/overview",
+              "api/events/queries",
+              "api/events/stats"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Self-Hosted",
+        "groups": [
+          {
+            "group": "Setup",
+            "pages": [
+              "self-hosted/installation",
+              "self-hosted/configuration",
+              "self-hosted/upgrading"
+            ]
+          },
+          {
+            "group": "Operations",
+            "pages": [
+              "self-hosted/backup",
+              "self-hosted/monitoring",
+              "self-hosted/troubleshooting"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Error tracking and issue grouping with intelligent deduplication",
+    "Distributed tracing and performance monitoring",
+    "Session replays for visual debugging",
+    "Continuous profiling for performance bottlenecks",
+    "Custom dashboards with metrics and charts",
+    "Cron job monitoring and uptime tracking",
+    "AI-powered issue triage with Seer",
+    "Feature flags integration with Flagpole",
+    "Extensible integrations with GitHub, Jira, Slack, and more",
+    "Developer Platform for custom Sentry Apps and webhooks"
+  ],
+  "publicApiSurface": [
+    "GET /api/0/organizations/{organization_id_or_slug}/",
+    "GET /api/0/organizations/{organization_id_or_slug}/projects/",
+    "GET /api/0/organizations/{organization_id_or_slug}/issues/",
+    "GET /api/0/organizations/{organization_id_or_slug}/events/",
+    "GET /api/0/organizations/{organization_id_or_slug}/stats/",
+    "GET /api/0/organizations/{organization_id_or_slug}/releases/",
+    "GET /api/0/projects/{organization_id_or_slug}/{project_id_or_slug}/",
+    "GET /api/0/projects/{organization_id_or_slug}/{project_id_or_slug}/issues/",
+    "GET /api/0/projects/{organization_id_or_slug}/{project_id_or_slug}/events/",
+    "GET /api/0/projects/{organization_id_or_slug}/{project_id_or_slug}/releases/",
+    "POST /api/0/organizations/{organization_id_or_slug}/issues/{issue_id}/",
+    "GET /api/0/organizations/{organization_id_or_slug}/members/",
+    "GET /api/0/organizations/{organization_id_or_slug}/teams/",
+    "GET /api/0/organizations/{organization_id_or_slug}/integrations/",
+    "POST /api/0/organizations/{organization_id_or_slug}/alerts/",
+    "GET /api/0/organizations/{organization_id_or_slug}/monitors/"
+  ]
+}
